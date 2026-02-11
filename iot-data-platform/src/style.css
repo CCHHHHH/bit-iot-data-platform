@@ -1,0 +1,243 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: #1a2b47;
+  background-color: #f5f7fa;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 物联网主题色彩变量 */
+  --primary-color: #0066cc;
+  --primary-light: #3399ff;
+  --primary-dark: #004c99;
+  --success-color: #00b386;
+  --warning-color: #ff9933;
+  --danger-color: #ff4d4f;
+  --info-color: #1890ff;
+  --text-primary: #1a2b47;
+  --text-secondary: #4a5568;
+  --background-light: #f5f7fa;
+  --background-white: #ffffff;
+  --border-color: #e2e8f0;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 通用样式 */
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.page-title::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background-color: var(--primary-color);
+  border-radius: 2px;
+  margin-right: 12px;
+}
+
+.card {
+  background: var(--background-white);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* 按钮样式 */
+.el-button--primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-button--primary:hover {
+  background-color: var(--primary-light) !important;
+  border-color: var(--primary-light) !important;
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3) !important;
+}
+
+.el-button--success {
+  background-color: var(--success-color) !important;
+  border-color: var(--success-color) !important;
+  border-radius: 8px !important;
+}
+
+.el-button--warning {
+  background-color: var(--warning-color) !important;
+  border-color: var(--warning-color) !important;
+  border-radius: 8px !important;
+}
+
+.el-button--danger {
+  background-color: var(--danger-color) !important;
+  border-color: var(--danger-color) !important;
+  border-radius: 8px !important;
+}
+
+/* 表格样式 */
+.el-table {
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 24px !important;
+}
+
+.el-table th {
+  background-color: #f8fafc !important;
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.el-table td {
+  padding: 16px !important;
+  font-size: 14px !important;
+  color: var(--text-secondary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.el-table tr:hover > td {
+  background-color: #f8fafc !important;
+}
+
+/* 表单样式 */
+.el-form-item {
+  margin-bottom: 20px !important;
+}
+
+.el-form-item__label {
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+}
+
+.el-input {
+  border-radius: 8px !important;
+  border: 1px solid var(--border-color) !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-input:focus-within {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1) !important;
+}
+
+/* 标签样式 */
+.el-tag {
+  border-radius: 6px !important;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+}
+
+/* 状态样式 */
+.status-connected {
+  background-color: rgba(0, 179, 134, 0.1) !important;
+  color: var(--success-color) !important;
+}
+
+.status-disconnected {
+  background-color: rgba(255, 77, 79, 0.1) !important;
+  color: var(--danger-color) !important;
+}
+
+.status-active {
+  background-color: rgba(0, 179, 134, 0.1) !important;
+  color: var(--success-color) !important;
+}
+
+.status-inactive {
+  background-color: rgba(144, 147, 153, 0.1) !important;
+  color: #909399 !important;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    height: auto;
+  }
+
+  .main-container {
+    flex: 1;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .card {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .content {
+    padding: 20px;
+  }
+}
