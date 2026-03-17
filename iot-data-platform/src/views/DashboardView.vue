@@ -12,11 +12,21 @@ const searchQuery = ref('')
 const temperatureChart = ref<HTMLElement>()
 const humidityChart = ref<HTMLElement>()
 const pressureChart = ref<HTMLElement>()
+const deviceStatusChart = ref<HTMLElement>()
+const alertLevelChart = ref<HTMLElement>()
+const deviceTypeChart = ref<HTMLElement>()
+const alertTrendChart = ref<HTMLElement>()
+const deviceHealthChart = ref<HTMLElement>()
 
 // 图表实例
 let temperatureChartInstance: echarts.ECharts | null = null
 let humidityChartInstance: echarts.ECharts | null = null
 let pressureChartInstance: echarts.ECharts | null = null
+let deviceStatusChartInstance: echarts.ECharts | null = null
+let alertLevelChartInstance: echarts.ECharts | null = null
+let deviceTypeChartInstance: echarts.ECharts | null = null
+let alertTrendChartInstance: echarts.ECharts | null = null
+let deviceHealthChartInstance: echarts.ECharts | null = null
 
 // 模拟数据
 const mockRealTimeMetrics = {
@@ -41,6 +51,44 @@ const mockPressureData = Array.from({ length: 24 }, (_, i) => ({
   timestamp: `${i}:00`,
   value: 1000 + Math.random() * 20
 }))
+
+// 设备类型数据
+const mockDeviceTypeData = [
+  { name: '温湿度传感器', value: 45 },
+  { name: '气压传感器', value: 25 },
+  { name: '光照传感器', value: 20 },
+  { name: '烟雾传感器', value: 18 }
+]
+
+// 设备状态数据
+const mockDeviceStatusData = [
+  { name: '在线', value: 112 },
+  { name: '离线', value: 12 },
+  { name: '异常', value: 4 }
+]
+
+// 告警级别数据
+const mockAlertLevelData = [
+  { name: '错误', value: 3 },
+  { name: '警告', value: 4 },
+  { name: '信息', value: 1 }
+]
+
+// 告警趋势数据
+const mockAlertTrendData = Array.from({ length: 7 }, (_, i) => ({
+  date: `2月${i+25}日`,
+  error: Math.floor(Math.random() * 5),
+  warning: Math.floor(Math.random() * 8),
+  info: Math.floor(Math.random() * 10)
+}))
+
+// 设备健康状态数据
+const mockDeviceHealthData = [
+  { name: '优秀', value: 85 },
+  { name: '良好', value: 30 },
+  { name: '一般', value: 10 },
+  { name: '差', value: 3 }
+]
 
 const mockAlerts = [
   {
@@ -137,6 +185,21 @@ const initCharts = () => {
   if (pressureChart.value) {
     pressureChartInstance = echarts.init(pressureChart.value)
   }
+  if (deviceStatusChart.value) {
+    deviceStatusChartInstance = echarts.init(deviceStatusChart.value)
+  }
+  if (alertLevelChart.value) {
+    alertLevelChartInstance = echarts.init(alertLevelChart.value)
+  }
+  if (deviceTypeChart.value) {
+    deviceTypeChartInstance = echarts.init(deviceTypeChart.value)
+  }
+  if (alertTrendChart.value) {
+    alertTrendChartInstance = echarts.init(alertTrendChart.value)
+  }
+  if (deviceHealthChart.value) {
+    deviceHealthChartInstance = echarts.init(deviceHealthChart.value)
+  }
 }
 
 // 更新图表
@@ -144,6 +207,11 @@ const updateCharts = () => {
   updateTemperatureChart()
   updateHumidityChart()
   updatePressureChart()
+  updateDeviceStatusChart()
+  updateAlertLevelChart()
+  updateDeviceTypeChart()
+  updateAlertTrendChart()
+  updateDeviceHealthChart()
 }
 
 // 图表通用配置
@@ -289,6 +357,248 @@ const updatePressureChart = () => {
   }
 }
 
+// 更新设备状态分布图表
+const updateDeviceStatusChart = () => {
+  if (deviceStatusChartInstance) {
+    const option = {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        data: ['在线', '离线', '异常']
+      },
+      series: [
+        {
+          name: '设备状态',
+          type: 'pie',
+          radius: '70%',
+          center: ['50%', '50%'],
+          data: mockDeviceStatusData,
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          },
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          }
+        }
+      ],
+      color: ['#00b386', '#909399', '#ff9933']
+    }
+    deviceStatusChartInstance.setOption(option)
+  }
+}
+
+// 更新告警级别分布图表
+const updateAlertLevelChart = () => {
+  if (alertLevelChartInstance) {
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: mockAlertLevelData.map(item => item.name),
+        axisLabel: {
+          color: '#4a5568'
+        }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          color: '#4a5568'
+        }
+      },
+      series: [
+        {
+          name: '告警数量',
+          type: 'bar',
+          data: mockAlertLevelData.map(item => item.value),
+          itemStyle: {
+            borderRadius: [4, 4, 0, 0]
+          }
+        }
+      ],
+      color: ['#f56c6c', '#e6a23c', '#409eff']
+    }
+    alertLevelChartInstance.setOption(option)
+  }
+}
+
+// 更新设备类型分布图表
+const updateDeviceTypeChart = () => {
+  if (deviceTypeChartInstance) {
+    const option = {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        data: mockDeviceTypeData.map(item => item.name)
+      },
+      series: [
+        {
+          name: '设备类型',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: '18',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: mockDeviceTypeData
+        }
+      ],
+      color: ['#0066cc', '#00b386', '#ff9933', '#f56c6c']
+    }
+    deviceTypeChartInstance.setOption(option)
+  }
+}
+
+// 更新告警趋势图表
+const updateAlertTrendChart = () => {
+  if (alertTrendChartInstance) {
+    const option = {
+      tooltip: {
+        trigger: 'axis'
+      },
+      legend: {
+        data: ['错误', '警告', '信息'],
+        top: 0
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: mockAlertTrendData.map(item => item.date),
+        axisLabel: {
+          color: '#4a5568'
+        }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          color: '#4a5568'
+        }
+      },
+      series: [
+        {
+          name: '错误',
+          type: 'line',
+          stack: 'Total',
+          data: mockAlertTrendData.map(item => item.error),
+          itemStyle: {
+            color: '#f56c6c'
+          }
+        },
+        {
+          name: '警告',
+          type: 'line',
+          stack: 'Total',
+          data: mockAlertTrendData.map(item => item.warning),
+          itemStyle: {
+            color: '#e6a23c'
+          }
+        },
+        {
+          name: '信息',
+          type: 'line',
+          stack: 'Total',
+          data: mockAlertTrendData.map(item => item.info),
+          itemStyle: {
+            color: '#409eff'
+          }
+        }
+      ]
+    }
+    alertTrendChartInstance.setOption(option)
+  }
+}
+
+// 更新设备健康状态图表
+const updateDeviceHealthChart = () => {
+  if (deviceHealthChartInstance) {
+    const option = {
+      tooltip: {
+        trigger: 'item'
+      },
+      legend: {
+        top: '5%',
+        left: 'center'
+      },
+      series: [
+        {
+          name: '健康状态',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: '20',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: mockDeviceHealthData
+        }
+      ],
+      color: ['#00b386', '#409eff', '#ff9933', '#f56c6c']
+    }
+    deviceHealthChartInstance.setOption(option)
+  }
+}
+
 // 监听数据变化
 watch(
   () => dashboardStore.temperatureData,
@@ -338,14 +648,6 @@ const searchAlerts = () => {
   // 搜索告警逻辑
   console.log('搜索告警:', searchQuery.value)
   // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery过滤告警数据
-}
-
-// 处理回车搜索
-const handleSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchAlerts()
-  }
 }
 </script>
 
@@ -415,6 +717,38 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
       <div class="chart-card card">
         <h3 class="chart-title">气压趋势</h3>
         <div ref="pressureChart" class="chart-container" style="height: 300px;"></div>
+      </div>
+    </div>
+
+    <!-- 设备状态和告警分布 -->
+    <div class="charts-grid">
+      <div class="chart-card card">
+        <h3 class="chart-title">设备状态分布</h3>
+        <div ref="deviceStatusChart" class="chart-container" style="height: 300px;"></div>
+      </div>
+      <div class="chart-card card">
+        <h3 class="chart-title">告警级别分布</h3>
+        <div ref="alertLevelChart" class="chart-container" style="height: 300px;"></div>
+      </div>
+    </div>
+
+    <!-- 设备类型和告警趋势 -->
+    <div class="charts-grid">
+      <div class="chart-card card">
+        <h3 class="chart-title">设备类型分布</h3>
+        <div ref="deviceTypeChart" class="chart-container" style="height: 300px;"></div>
+      </div>
+      <div class="chart-card card">
+        <h3 class="chart-title">告警趋势</h3>
+        <div ref="alertTrendChart" class="chart-container" style="height: 300px;"></div>
+      </div>
+    </div>
+
+    <!-- 设备健康状态 -->
+    <div class="charts-grid">
+      <div class="chart-card card">
+        <h3 class="chart-title">设备健康状态</h3>
+        <div ref="deviceHealthChart" class="chart-container" style="height: 300px;"></div>
       </div>
     </div>
 

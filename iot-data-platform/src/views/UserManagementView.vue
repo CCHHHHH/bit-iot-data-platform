@@ -173,14 +173,7 @@ const searchUsers = () => {
   // 搜索用户逻辑
   console.log('搜索用户:', searchQuery.value)
   // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery过滤用户数据
-}
-
-// 处理回车搜索
-const handleSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchUsers()
-  }
+  // 例如：根据 searchQuery 过滤用户数据
 }
 </script>
 

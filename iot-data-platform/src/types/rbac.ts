@@ -49,6 +49,15 @@ export const PermissionCodes = {
   DEVICE_EDIT: 'device:edit',
   DEVICE_DELETE: 'device:delete',
   
+  // 设备目录管理
+  DEVICE_CATALOG_VIEW: 'device:catalog:view',
+  DEVICE_CATALOG_CREATE: 'device:catalog:create',
+  DEVICE_CATALOG_EDIT: 'device:catalog:edit',
+  DEVICE_CATALOG_DELETE: 'device:catalog:delete',
+  DEVICE_CATALOG_MOVE: 'device:catalog:move',
+  DEVICE_CATALOG_ADD_DEVICE: 'device:catalog:add_device',
+  DEVICE_CATALOG_REMOVE_DEVICE: 'device:catalog:remove_device',
+  
   // 告警管理
   ALERT_VIEW: 'alert:view',
   ALERT_HANDLE: 'alert:handle',

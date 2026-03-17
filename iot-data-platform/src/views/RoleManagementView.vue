@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus, Edit, Delete, View, Search } from '@element-plus/icons-vue'
-import { useRoleStore } from '../stores/role'
+import { Plus, Edit, Delete, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getRoleList, addRole as apiAddRole, deleteRole as apiDeleteRole, getPermissionList, getRolePermissions, bindRolePermissions as bindRolePermissionsApi } from '../api'
 
-const roleStore = useRoleStore()
-const router = useRouter()
 const loading = ref(true)
 const searchQuery = ref('')
+
+// 角色数据
+const roles = ref<any[]>([])
 
 // 分页状态
 const pagination = ref({
@@ -17,90 +17,222 @@ const pagination = ref({
   total: 0
 })
 
-onMounted(async () => {
-  // 模拟加载
+// 新增角色对话框
+const addRoleDialogVisible = ref(false)
+const addRoleForm = ref({
+  roleName: '',
+  description: ''
+})
+const addRoleFormRef = ref()
+const addRoleLoading = ref(false)
+
+// 权限绑定对话框
+const bindPermissionDialogVisible = ref(false)
+const bindPermissionLoading = ref(false)
+const currentRoleId = ref('')
+const currentRoleName = ref('')
+const currentPermissionIds = ref<string[]>([])
+const allPermissions = ref<any[]>([])
+const bindPermissionFormRef = ref()
+
+// 获取角色数据
+const fetchRoles = async () => {
   loading.value = true
-  await roleStore.initializeRoles()
-  pagination.value.total = roleStore.roles.length
-  loading.value = false
+  try {
+    const response = await getRoleList({
+      current: pagination.value.currentPage,
+      size: pagination.value.pageSize,
+      roleName: searchQuery.value
+    })
+    
+    if (response.data && response.data.data) {
+      roles.value = response.data.data || []
+      pagination.value.total = response.data.total || 0
+    }
+  } catch (error: any) {
+    ElMessage.error('获取角色数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchRoles()
 })
 
 // 分页方法
-const handleSizeChange = (size: number) => {
+const handleSizeChange = async (size: number) => {
   pagination.value.pageSize = size
   pagination.value.currentPage = 1
+  await fetchRoles()
 }
 
-const handleCurrentChange = (current: number) => {
+const handleCurrentChange = async (current: number) => {
   pagination.value.currentPage = current
-}
-
-// 计算分页后的数据
-const getPaginatedRoles = () => {
-  const { currentPage, pageSize } = pagination.value
-  const start = (currentPage - 1) * pageSize
-  const end = start + pageSize
-  return roleStore.roles.slice(start, end)
-}
-
-// 编辑角色
-const editRole = (id: string) => {
-  // 编辑角色逻辑
-  console.log('编辑角色:', id)
-  ElMessage.info(`编辑角色: ${id}`)
-}
-
-// 删除角色
-const deleteRole = (id: string) => {
-  // 删除角色逻辑
-  console.log('删除角色:', id)
-  ElMessageBox.confirm('确定要删除该角色吗？', {
-    title: '删除确认',
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'error'
-  }).then(() => {
-    // 执行删除操作
-    roleStore.deleteRole(id)
-    ElMessage.success('删除成功')
-  }).catch(() => {
-    // 取消删除
-    ElMessage.info('已取消删除')
-  })
+  await fetchRoles()
 }
 
 // 添加角色
 const addRole = () => {
-  // 添加角色逻辑
-  console.log('添加角色')
-  ElMessage.info('添加角色功能开发中')
+  addRoleForm.value = {
+    roleName: '',
+    description: ''
+  }
+  addRoleDialogVisible.value = true
 }
 
-// 查看角色详情
-const viewRoleDetail = (id: string) => {
-  // 查看角色详情逻辑
-  console.log('查看角色详情:', id)
-  // 跳转到角色权限分配页面
-  router.push(`/role/${id}/permission`)
+// 提交新增角色
+const submitAddRole = async () => {
+  if (!addRoleFormRef.value) return
+  
+  await addRoleFormRef.value.validate(async (valid: boolean) => {
+    if (!valid) return
+    
+    addRoleLoading.value = true
+    try {
+      await apiAddRole(addRoleForm.value)
+      ElMessage.success('添加角色成功')
+      addRoleDialogVisible.value = false
+      await fetchRoles()
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '添加角色失败')
+    } finally {
+      addRoleLoading.value = false
+    }
+  })
 }
 
-// 角色权限数量
-const getPermissionCount = (permissions: any[]) => {
-  return permissions.length
+// 删除角色
+const deleteRole = async (id: string) => {
+  ElMessageBox.confirm('确定要删除该角色吗？此操作不可恢复！', {
+    title: '删除确认',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await apiDeleteRole(id)
+      ElMessage.success('删除成功')
+      await fetchRoles()
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '删除角色失败')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消删除')
+  })
 }
 
 // 搜索角色
-const searchRoles = () => {
-  // 搜索角色逻辑
-  console.log('搜索角色:', searchQuery.value)
-  // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery过滤角色数据
+const searchRoles = async () => {
+  pagination.value.currentPage = 1
+  await fetchRoles()
 }
 
-// 处理回车搜索
-const handleSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchRoles()
+// 编辑角色
+const editRole = () => {
+  ElMessage.info('编辑角色功能开发中')
+}
+
+// 打开权限绑定对话框
+const openBindPermissions = async (roleId: string, roleName: string) => {
+  currentRoleId.value = roleId
+  currentRoleName.value = roleName
+  
+  // 获取所有权限
+  try {
+    const response = await getPermissionList({ current: 1, size: 100 })
+    if (response.data && response.data.data) {
+      allPermissions.value = response.data.data
+    }
+    
+    // 获取角色当前权限
+    const permsResponse = await getRolePermissions(roleId)
+    
+    if (permsResponse.data && permsResponse.data.data) {
+      const rolePerms = permsResponse.data.data
+      
+      // 处理嵌套的权限数据结构
+      if (Array.isArray(rolePerms)) {
+        // 检查第一个元素是否有 permissions 字段
+        if (rolePerms.length > 0 && rolePerms[0].permissions) {
+          // 嵌套结构：[{ permissions: [{id: '1'}, {id: '2'}] }]
+          rolePerms.forEach(role => {
+            if (role.permissions && Array.isArray(role.permissions)) {
+              role.permissions.forEach((perm: any) => {
+                if (perm.id) {
+                  currentPermissionIds.value.push(perm.id)
+                }
+              })
+            }
+          })
+        } else if (rolePerms.length > 0 && typeof rolePerms[0] === 'string') {
+          // 字符串数组：直接就是 ID 列表
+          currentPermissionIds.value = rolePerms.filter((id: string) => id)
+        } else {
+          // 对象数组：提取 ID
+          rolePerms.forEach((p: any) => {
+            if (p.id || p.permissionId) {
+              currentPermissionIds.value.push(p.id || p.permissionId)
+            }
+          })
+        }
+      }
+      
+      currentPermissionIds.value = currentPermissionIds.value
+    } else {
+      currentPermissionIds.value = []
+    }
+    
+    bindPermissionDialogVisible.value = true
+  } catch (error: any) {
+    ElMessage.error('获取权限列表失败')
+  }
+}
+
+// 提交权限绑定
+const submitBindPermissions = async () => {
+  if (!currentRoleId.value) {
+    ElMessage.error('角色 ID 不能为空')
+    return
+  }
+  
+  // 确保权限 ID 列表不为空且没有 null 值
+  const validPermissionIds = currentPermissionIds.value.filter(id => id != null && id !== '')
+  
+  if (validPermissionIds.length === 0) {
+    ElMessage.warning('请至少选择一个权限')
+    return
+  }
+  
+  bindPermissionLoading.value = true
+  try {
+    await bindRolePermissionsApi(currentRoleId.value, validPermissionIds)
+    ElMessage.success('权限绑定成功')
+    bindPermissionDialogVisible.value = false
+    
+    // 重新加载权限列表以便下次打开时显示最新状态
+    const permsResponse = await getRolePermissions(currentRoleId.value)
+    if (permsResponse.data && permsResponse.data.data) {
+      currentPermissionIds.value = permsResponse.data.data.map((p: any) => p.id)
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '绑定权限失败')
+  } finally {
+    bindPermissionLoading.value = false
+  }
+}
+
+// 权限标签类型
+const getPermissionTagType = (permissionType: string) => {
+  switch (permissionType) {
+    case 'MENU':
+      return 'primary'
+    case 'BUTTON':
+      return 'warning'
+    case 'API':
+      return 'success'
+    default:
+      return ''
   }
 }
 </script>
@@ -119,7 +251,8 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
     <div class="search-bar">
       <el-input
         v-model="searchQuery"
-        placeholder="搜索角色名称或代码"
+        placeholder="搜索角色名称"
+        prefix-icon="Search"
         clearable
         style="width: 400px;"
         @keydown.enter="searchRoles"
@@ -135,40 +268,75 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
     <!-- 角色列表 -->
     <div class="role-list card" v-loading="loading">
       <el-table
-        :data="getPaginatedRoles()"
+        :data="roles"
         style="width: 100%"
-        border
-        stripe
+        size="small"
       >
-        <el-table-column prop="name" label="角色名称" min-width="150" />
-        <el-table-column prop="code" label="角色代码" width="120" />
-        <el-table-column prop="description" label="角色描述" />
-        <el-table-column label="权限数量" width="100">
+        <el-table-column prop="roleName" label="角色名称" />
+        <el-table-column prop="description" label="描述" />
+        <el-table-column label="权限" min-width="250">
           <template #default="{ row }">
-            <span>{{ getPermissionCount(row.permissions) }}</span>
+            <div class="permission-tags-container">
+              <el-tooltip 
+                v-if="row.permissions && row.permissions.length > 0"
+                placement="top"
+                :disabled="row.permissions.length <= 3"
+              >
+                <template #content>
+                  <div class="permission-tooltip">
+                    <div v-for="perm in row.permissions" :key="perm.id" class="permission-tooltip-item">
+                      <el-tag :type="getPermissionTagType(perm.permissionType)" size="small">
+                        {{ perm.permissionName }}
+                      </el-tag>
+                    </div>
+                  </div>
+                </template>
+                <div class="permission-tags">
+                  <el-tag
+                    v-for="(perm, index) in row.permissions"
+                    :key="perm.id"
+                    :type="getPermissionTagType(perm.permissionType)"
+                    size="small"
+                    class="permission-tag"
+                    :style="{ display: index >= 3 ? 'none' : 'inline-block' }"
+                  >
+                    {{ perm.permissionName }}
+                  </el-tag>
+                  <el-tag
+                    v-if="row.permissions.length > 3"
+                    type="info"
+                    size="small"
+                    class="permission-tag-more"
+                  >
+                    +{{ row.permissions.length - 3 }}
+                  </el-tag>
+                </div>
+              </el-tooltip>
+              <span v-else class="no-permission">未分配权限</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column prop="updatedAt" label="更新时间" width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column prop="createTime" label="创建时间" />
+        <el-table-column prop="updateTime" label="更新时间" />
+        <el-table-column label="操作" fixed="right" width="320">
           <template #default="{ row }">
             <el-button
               type="primary"
               size="small"
-              class="view-btn"
-              @click="viewRoleDetail(row.id)"
-            >
-              <el-icon><View /></el-icon>
-              详情
-            </el-button>
-            <el-button
-              type="warning"
-              size="small"
               class="edit-btn"
-              @click="editRole(row.id)"
+              @click="editRole"
             >
               <el-icon><Edit /></el-icon>
               编辑
+            </el-button>
+            <el-button
+              type="success"
+              size="small"
+              class="bind-permission-btn"
+              @click="openBindPermissions(row.id, row.roleName)"
+            >
+              <el-icon><Plus /></el-icon>
+              权限绑定
             </el-button>
             <el-button
               type="danger"
@@ -197,6 +365,86 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
         />
       </div>
     </div>
+
+    <!-- 新增角色对话框 -->
+    <el-dialog
+      v-model="addRoleDialogVisible"
+      title="添加角色"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="addRoleFormRef"
+        :model="addRoleForm"
+        label-width="80px"
+        label-position="left"
+      >
+        <el-form-item
+          label="角色名称"
+          prop="roleName"
+          :rules="[{ required: true, message: '请输入角色名称', trigger: 'blur' }]"
+        >
+          <el-input v-model="addRoleForm.roleName" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item
+          label="描述"
+          prop="description"
+          :rules="[{ required: false }]"
+        >
+          <el-input
+            v-model="addRoleForm.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入角色描述"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addRoleDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitAddRole" :loading="addRoleLoading">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 权限绑定对话框 -->
+    <el-dialog
+      v-model="bindPermissionDialogVisible"
+      title="权限绑定"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <p style="margin-bottom: 15px;">
+        当前角色：<strong>{{ currentRoleName }}</strong>
+      </p>
+      <el-form
+        ref="bindPermissionFormRef"
+        label-width="100px"
+        label-position="left"
+      >
+        <el-form-item label="选择权限">
+          <el-checkbox-group v-model="currentPermissionIds">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <el-checkbox
+                v-for="permission in allPermissions"
+                :key="permission.id"
+                :label="permission.permissionName"
+                :value="permission.id"
+                border
+              >
+                {{ permission.permissionName }} ({{ permission.permissionCode }})
+              </el-checkbox>
+            </div>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="bindPermissionDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitBindPermissions" :loading="bindPermissionLoading">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -216,12 +464,44 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
   margin-bottom: 20px;
 }
 
-.view-btn {
+.edit-btn {
   margin-right: 8px;
 }
 
-.edit-btn {
-  margin-right: 8px;
+.permission-tags-container {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.permission-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.permission-tag {
+  cursor: pointer;
+}
+
+.permission-tag-more {
+  cursor: pointer;
+  background-color: #f5f7fa;
+  border: 1px dashed #dcdfe6;
+}
+
+.no-permission {
+  color: #909399;
+  font-style: italic;
+}
+
+.permission-tooltip {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.permission-tooltip-item {
+  margin-bottom: 4px;
 }
 
 @media (max-width: 768px) {

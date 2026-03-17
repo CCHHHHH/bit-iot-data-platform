@@ -137,15 +137,6 @@ const getStatusText = (status: string) => {
 const searchRules = () => {
   // 搜索规则逻辑
   console.log('搜索规则:', searchQuery.value)
-  // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery过滤规则数据
-}
-
-// 处理回车搜索
-const handleSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchRules()
-  }
 }
 </script>
 
@@ -181,22 +172,22 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
       <el-table
         :data="paginatedRules"
         style="width: 100%"
-        border
-        stripe
+        size="small"
+        :row-style="{ height: '48px' }"
       >
-        <el-table-column prop="name" label="规则名称" min-width="150" />
+        <el-table-column prop="name" label="规则名称" />
         <el-table-column prop="description" label="规则描述" />
-        <el-table-column prop="condition" label="触发条件" min-width="150" />
-        <el-table-column prop="action" label="执行动作" width="120" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="condition" label="触发条件" />
+        <el-table-column prop="action" label="执行动作" />
+        <el-table-column prop="status" label="状态">
           <template #default="{ row }">
             <span class="rule-status" :class="getStatusClass(row.status)">
               {{ getStatusText(row.status) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column prop="updatedAt" label="更新时间" />
+        <el-table-column label="操作" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"

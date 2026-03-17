@@ -312,31 +312,15 @@ const getStatusText = (status: string) => {
 // 搜索插件
 const searchPlugins = () => {
   // 搜索插件逻辑
-  console.log('搜索插件:', searchQuery.plugins)
+  console.log('搜索插件:', searchQuery.value)
   // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery.plugins过滤插件数据
 }
 
 // 搜索集成
 const searchIntegrations = () => {
   // 搜索集成逻辑
-  console.log('搜索集成:', searchQuery.integrations)
+  console.log('搜索集成:', searchQuery.value)
   // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery.integrations过滤集成数据
-}
-
-// 处理插件回车搜索
-const handlePluginSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchPlugins()
-  }
-}
-
-// 处理集成回车搜索
-const handleIntegrationSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchIntegrations()
-  }
 }
 </script>
 
@@ -376,22 +360,22 @@ const handleIntegrationSearchKeydown = (event: KeyboardEvent) => {
           <el-table
             :data="getPaginatedPlugins()"
             style="width: 100%"
-            border
-            stripe
+            size="small"
+            :row-style="{ height: '48px' }"
           >
-            <el-table-column prop="name" label="插件名称" min-width="180" />
-            <el-table-column prop="version" label="版本" min-width="100" />
-            <el-table-column prop="description" label="插件描述" min-width="250" />
-            <el-table-column prop="fileSize" label="文件大小" min-width="100" />
-            <el-table-column prop="status" label="状态" min-width="100">
+            <el-table-column prop="name" label="插件名称" />
+            <el-table-column prop="version" label="版本" />
+            <el-table-column prop="description" label="插件描述" />
+            <el-table-column prop="fileSize" label="文件大小" />
+            <el-table-column prop="status" label="状态">
               <template #default="{ row }">
                 <span class="plugin-status" :class="getStatusClass(row.status)">
                   {{ getStatusText(row.status) }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="updatedAt" label="更新时间" width="180" />
-            <el-table-column label="操作" width="240" fixed="right">
+            <el-table-column prop="updatedAt" label="更新时间" />
+            <el-table-column label="操作" fixed="right">
               <template #default="{ row }">
                 <el-button
                   type="primary"
@@ -472,23 +456,23 @@ const handleIntegrationSearchKeydown = (event: KeyboardEvent) => {
           <el-table
             :data="getPaginatedIntegrations()"
             style="width: 100%"
-            border
-            stripe
+            size="small"
+            :row-style="{ height: '48px' }"
           >
-            <el-table-column prop="name" label="集成名称" min-width="180" />
-            <el-table-column prop="pluginName" label="绑定插件" min-width="150" />
-            <el-table-column prop="type" label="集成类型" min-width="120" />
-            <el-table-column prop="description" label="集成描述" min-width="250" />
-            <el-table-column prop="endpoint" label="端点地址" min-width="220" />
-            <el-table-column prop="status" label="状态" min-width="100">
+            <el-table-column prop="name" label="集成名称" />
+            <el-table-column prop="pluginName" label="绑定插件" />
+            <el-table-column prop="type" label="集成类型" />
+            <el-table-column prop="description" label="集成描述" />
+            <el-table-column prop="endpoint" label="端点地址" />
+            <el-table-column prop="status" label="状态">
               <template #default="{ row }">
                 <span class="integration-status" :class="getStatusClass(row.status)">
                   {{ getStatusText(row.status) }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="updatedAt" label="更新时间" width="180" />
-            <el-table-column label="操作" width="280" fixed="right">
+            <el-table-column prop="updatedAt" label="更新时间" />
+            <el-table-column label="操作" fixed="right">
               <template #default="{ row }">
                 <el-button
                   type="primary"

@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Edit, View, Search } from '@element-plus/icons-vue'
-import { usePermissionStore } from '../stores/permission'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted } from 'vue'
+import { Plus, Delete, Search } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  getPermissionList, 
+  addPermission as apiAddPermission, 
+  deletePermission as apiDeletePermission
+} from '../api'
 
-
-const permissionStore = usePermissionStore()
 const loading = ref(true)
 const searchQuery = ref('')
+const selectedPermissionIds = ref<string[]>([])
+
+// 权限数据
+const permissions = ref<any[]>([])
 
 // 分页状态
 const pagination = ref({
@@ -16,92 +22,165 @@ const pagination = ref({
   total: 0
 })
 
+// 新增权限对话框
+const addPermissionDialogVisible = ref(false)
+const addPermissionForm = ref({
+  permissionName: '',
+  permissionCode: '',
+  description: '',
+  permissionType: 'MENU'
+})
+const addPermissionFormRef = ref()
+const addPermissionLoading = ref(false)
+
+// 获取权限数据
+const fetchPermissions = async () => {
+  loading.value = true
+  try {
+    const response = await getPermissionList({
+      current: pagination.value.currentPage,
+      size: pagination.value.pageSize,
+      permissionName: searchQuery.value
+    })
+    
+    if (response.data && response.data.data) {
+      permissions.value = response.data.data || []
+      pagination.value.total = response.data.total || 0
+    }
+  } catch (error: any) {
+    console.error('获取权限数据失败:', error)
+    ElMessage.error('获取权限数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
-  // 权限数据已在store初始化时加载
-  pagination.value.total = permissionStore.permissions.length
-  loading.value = false
+  fetchPermissions()
 })
 
 // 分页方法
-const handleSizeChange = (size: number) => {
+const handleSizeChange = async (size: number) => {
   pagination.value.pageSize = size
   pagination.value.currentPage = 1
+  await fetchPermissions()
 }
 
-const handleCurrentChange = (current: number) => {
+const handleCurrentChange = async (current: number) => {
   pagination.value.currentPage = current
-}
-
-// 计算分页后的数据
-const paginatedPermissions = computed(() => {
-  const permissions = permissionStore.permissions
-  const { currentPage, pageSize } = pagination.value
-  const start = (currentPage - 1) * pageSize
-  const end = start + pageSize
-  return permissions.slice(start, end)
-})
-
-// 编辑权限
-const editPermission = (id: string) => {
-  // 编辑权限逻辑
-  console.log('编辑权限:', id)
-  ElMessage.info(`编辑权限: ${id}`)
-}
-
-// 查看权限详情
-const viewPermissionDetail = (id: string) => {
-  // 查看权限详情逻辑
-  console.log('查看权限详情:', id)
-  ElMessage.info(`查看权限详情: ${id}`)
-}
-
-// 权限类型文本
-const getPermissionTypeText = (type: string) => {
-  switch (type) {
-    case 'menu':
-      return '菜单'
-    case 'button':
-      return '按钮'
-    case 'api':
-      return 'API'
-    default:
-      return type
-  }
-}
-
-// 权限类型样式
-const getPermissionTypeClass = (type: string) => {
-  switch (type) {
-    case 'menu':
-      return 'permission-menu'
-    case 'button':
-      return 'permission-button'
-    case 'api':
-      return 'permission-api'
-    default:
-      return ''
-  }
-}
-
-// 获取父权限名称
-const getParentPermissionName = (parentId: string | undefined) => {
-  if (!parentId) return '无'
-  const parent = permissionStore.getPermissionById(parentId)
-  return parent ? parent.name : '未知'
+  await fetchPermissions()
 }
 
 // 搜索权限
-const searchPermissions = () => {
-  // 搜索权限逻辑
-  console.log('搜索权限:', searchQuery.value)
-  // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery过滤权限数据
+const searchPermissions = async () => {
+  pagination.value.currentPage = 1
+  await fetchPermissions()
 }
 
-// 处理回车搜索
-const handleSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchPermissions()
+// 选择权限
+const handleSelectionChange = (selection: any[]) => {
+  selectedPermissionIds.value = selection.map(item => item.id)
+}
+
+// 添加权限
+const addPermission = () => {
+  addPermissionForm.value = {
+    permissionName: '',
+    permissionCode: '',
+    description: '',
+    permissionType: 'MENU'
+  }
+  addPermissionDialogVisible.value = true
+}
+
+// 提交新增权限
+const submitAddPermission = async () => {
+  if (!addPermissionFormRef.value) return
+  
+  await addPermissionFormRef.value.validate(async (valid: boolean) => {
+    if (!valid) return
+    
+    addPermissionLoading.value = true
+    try {
+      await apiAddPermission(addPermissionForm.value)
+      ElMessage.success('添加权限成功')
+      addPermissionDialogVisible.value = false
+      await fetchPermissions()
+    } catch (error: any) {
+      console.error('添加权限失败:', error)
+      ElMessage.error(error.response?.data?.message || '添加权限失败')
+    } finally {
+      addPermissionLoading.value = false
+    }
+  })
+}
+
+// 删除单个权限
+const deletePermission = async (id: string, permissionName: string) => {
+  ElMessageBox.confirm(`确定要删除权限"${permissionName}"吗？此操作不可恢复！`, {
+    title: '删除确认',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await apiDeletePermission(id)
+      ElMessage.success('删除成功')
+      await fetchPermissions()
+    } catch (error: any) {
+      console.error('删除权限失败:', error)
+      ElMessage.error(error.response?.data?.message || '删除权限失败')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消删除')
+  })
+}
+
+// 批量删除权限
+const batchDelete = async () => {
+  if (selectedPermissionIds.value.length === 0) {
+    ElMessage.warning('请选择要删除的权限')
+    return
+  }
+  
+  ElMessageBox.confirm(`确定要删除选中的 ${selectedPermissionIds.value.length} 个权限吗？此操作不可恢复！`, {
+    title: '批量删除确认',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      // 如果没有批量删除接口，就逐个删除
+      const deletePromises = selectedPermissionIds.value.map(id => apiDeletePermission(id))
+      await Promise.all(deletePromises)
+      
+      ElMessage.success('批量删除成功')
+      selectedPermissionIds.value = []
+      await fetchPermissions()
+    } catch (error: any) {
+      console.error('批量删除失败:', error)
+      ElMessage.error(error.response?.data?.message || '批量删除失败')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消删除')
+  })
+}
+
+// 权限类型标签
+const getPermissionTypeTag = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'MENU': 'info',
+    'BUTTON': 'warning',
+    'API': 'success'
+  }
+  const textMap: Record<string, string> = {
+    'MENU': '菜单',
+    'BUTTON': '按钮',
+    'API': '接口'
+  }
+  return {
+    type: typeMap[type] || 'info',
+    text: textMap[type] || type
   }
 }
 </script>
@@ -110,13 +189,27 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
   <div class="permission-management-view">
     <div class="page-header">
       <h1 class="page-title">权限管理</h1>
+      <div>
+        <el-button 
+          type="danger" 
+          :disabled="selectedPermissionIds.length === 0"
+          @click="batchDelete"
+        >
+          <el-icon><Delete /></el-icon>
+          批量删除
+        </el-button>
+        <el-button type="primary" @click="addPermission">
+          <el-icon><Plus /></el-icon>
+          添加权限
+        </el-button>
+      </div>
     </div>
 
     <!-- 搜索 -->
     <div class="search-bar">
       <el-input
         v-model="searchQuery"
-        placeholder="搜索权限名称或代码"
+        placeholder="搜索权限名称"
         clearable
         style="width: 400px;"
         @keydown.enter="searchPermissions"
@@ -132,57 +225,43 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
     <!-- 权限列表 -->
     <div class="permission-list card" v-loading="loading">
       <el-table
-        :data="paginatedPermissions"
+        :data="permissions"
         style="width: 100%"
-        border
-        stripe
+        size="small"
+        @selection-change="handleSelectionChange"
       >
-        <el-table-column prop="name" label="权限名称" min-width="150" />
-        <el-table-column prop="code" label="权限代码" min-width="150" />
-        <el-table-column prop="type" label="权限类型" width="100">
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="permissionName" label="权限名称" />
+        <el-table-column prop="permissionCode" label="权限标识" />
+        <el-table-column prop="permissionType" label="权限类型">
           <template #default="{ row }">
-            <span class="permission-type" :class="getPermissionTypeClass(row.type)">
-              {{ getPermissionTypeText(row.type) }}
-            </span>
+            <el-tag :type="getPermissionTypeTag(row.permissionType).type">
+              {{ getPermissionTypeTag(row.permissionType).text }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="父权限" width="150">
-          <template #default="{ row }">
-            {{ getParentPermissionName(row.parentId) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="description" label="权限描述" />
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column prop="description" label="描述" />
+        <el-table-column prop="createTime" label="创建时间" />
+        <el-table-column label="操作" fixed="right" width="120">
           <template #default="{ row }">
             <el-button
-              type="primary"
+              type="danger"
               size="small"
-              class="view-btn"
-              @click="viewPermissionDetail(row.id)"
+              class="delete-btn"
+              @click="deletePermission(row.id, row.permissionName)"
             >
-              <el-icon><View /></el-icon>
-              详情
-            </el-button>
-            <el-button
-              type="warning"
-              size="small"
-              class="edit-btn"
-              @click="editPermission(row.id)"
-            >
-              <el-icon><Edit /></el-icon>
-              编辑
+              <el-icon><Delete /></el-icon>
+              删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      
-      <!-- 分页组件 -->
-      <div class="pagination-container">
+      <!-- 分页 -->
+      <div class="pagination-container" style="margin-top: 24px; padding: 0 16px;">
         <el-pagination
           v-model:current-page="pagination.currentPage"
           v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="[5, 10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="pagination.total"
           prev-text="上一页"
@@ -192,6 +271,65 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
         />
       </div>
     </div>
+
+    <!-- 新增权限对话框 -->
+    <el-dialog
+      v-model="addPermissionDialogVisible"
+      title="添加权限"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="addPermissionFormRef"
+        :model="addPermissionForm"
+        label-width="100px"
+        label-position="left"
+      >
+        <el-form-item
+          label="权限名称"
+          prop="permissionName"
+          :rules="[{ required: true, message: '请输入权限名称', trigger: 'blur' }]"
+        >
+          <el-input v-model="addPermissionForm.permissionName" placeholder="请输入权限名称" />
+        </el-form-item>
+        <el-form-item
+          label="权限标识"
+          prop="permissionCode"
+          :rules="[{ required: true, message: '请输入权限标识', trigger: 'blur' }]"
+        >
+          <el-input v-model="addPermissionForm.permissionCode" placeholder="请输入权限标识（如：user:add）" />
+        </el-form-item>
+        <el-form-item
+          label="权限类型"
+          prop="permissionType"
+          :rules="[{ required: true, message: '请选择权限类型', trigger: 'change' }]"
+        >
+          <el-select v-model="addPermissionForm.permissionType" placeholder="请选择权限类型" style="width: 100%;">
+            <el-option label="菜单" value="MENU" />
+            <el-option label="按钮" value="BUTTON" />
+            <el-option label="接口" value="API" />
+          </el-select>
+        </el-form-item>
+        <el-form-item
+          label="描述"
+          prop="description"
+          :rules="[{ required: false }]"
+        >
+          <el-input
+            v-model="addPermissionForm.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入权限描述"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addPermissionDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitAddPermission" :loading="addPermissionLoading">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -211,36 +349,8 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
   margin-bottom: 20px;
 }
 
-.permission-type {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.permission-menu {
-  background-color: #ecf5ff;
-  color: #409eff;
-}
-
-.permission-button {
-  background-color: #f0f9eb;
-  color: #67c23a;
-}
-
-.permission-api {
-  background-color: #fdf6ec;
-  color: #e6a23c;
-}
-
-.view-btn {
-  margin-right: 8px;
-}
-
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+.delete-btn {
+  margin-right: 0;
 }
 
 @media (max-width: 768px) {
@@ -256,10 +366,6 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
 
   .el-input {
     width: 100% !important;
-  }
-
-  .pagination-container {
-    justify-content: center;
   }
 }
 </style>

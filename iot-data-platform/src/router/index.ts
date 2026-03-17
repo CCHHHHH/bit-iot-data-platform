@@ -5,7 +5,15 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/dashboard'
+      redirect: '/login'
+    },
+    {
+      path: '/login',
+      name: 'Login',
+      component: () => import('../views/LoginView.vue'),
+      meta: {
+        title: '登录'
+      }
     },
     {
       path: '/dashboard',
@@ -86,13 +94,42 @@ const router = createRouter({
       meta: {
         title: '设备集成'
       }
+    },
+    {
+      path: '/device-catalogs',
+      name: 'DeviceCatalogs',
+      component: () => import('../views/DeviceCatalogView.vue'),
+      meta: {
+        title: '设备目录管理'
+      }
     }
   ]
 })
 
+// 模拟登录状态存储
+let isLoggedIn = false
+
+// 登录成功后设置登录状态
+export const setLoggedIn = (status: boolean) => {
+  isLoggedIn = status
+}
+
 router.beforeEach((to, _from, next) => {
   document.title = to.meta.title as string || '物联网数据中台'
-  next()
+  
+  // 登录页面不需要验证
+  if (to.path === '/login') {
+    next()
+    return
+  }
+  
+  // 其他页面需要验证登录状态
+  if (isLoggedIn) {
+    next()
+  } else {
+    // 未登录，重定向到登录页
+    next('/login')
+  }
 })
 
 export default router

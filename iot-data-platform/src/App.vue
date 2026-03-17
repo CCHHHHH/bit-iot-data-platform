@@ -51,7 +51,17 @@ const menuItems = [
 </script>
 
 <template>
-  <div class="app-container">
+  <!-- 登录页面 -->
+  <template v-if="router.currentRoute.value.path === '/login'">
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
+  </template>
+  
+  <!-- 主应用 -->
+  <div v-else class="app-container">
     <!-- 侧边栏 -->
     <el-aside width="200px" class="sidebar" :class="{ 'collapsed': isCollapse }">
       <div class="sidebar-header">

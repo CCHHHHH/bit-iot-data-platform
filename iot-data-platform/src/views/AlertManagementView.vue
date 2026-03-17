@@ -154,14 +154,7 @@ const searchAlerts = () => {
   // 搜索告警逻辑
   console.log('搜索告警:', searchQuery.value)
   // 这里可以添加实际的搜索逻辑
-  // 例如：根据searchQuery过滤告警数据
-}
-
-// 处理回车搜索
-const handleSearchKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    searchAlerts()
-  }
+  // 例如：根据 searchQuery 过滤告警数据
 }
 </script>
 
@@ -229,27 +222,27 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
       <el-table
         :data="paginatedAlerts"
         style="width: 100%"
-        border
-        stripe
+        size="small"
+        :row-style="{ height: '48px' }"
       >
-        <el-table-column prop="deviceName" label="设备名称" width="200" />
+        <el-table-column prop="deviceName" label="设备名称" />
         <el-table-column prop="message" label="告警信息" />
-        <el-table-column prop="level" label="告警级别" width="100">
+        <el-table-column prop="level" label="告警级别">
           <template #default="{ row }">
             <span class="alert-level" :class="getAlertLevelClass(row.level)">
               {{ row.level === 'error' ? '错误' : row.level === 'warning' ? '警告' : '信息' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="timestamp" label="发生时间" width="180" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="timestamp" label="发生时间" />
+        <el-table-column prop="status" label="状态">
           <template #default="{ row }">
             <span class="alert-status" :class="getStatusClass(row.status)">
               {{ row.status === 'active' ? '活跃' : '已解决' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column label="操作" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'active'"
