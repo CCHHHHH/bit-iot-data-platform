@@ -144,50 +144,45 @@ const searchRules = () => {
   <div class="rule-engine-view">
     <div class="page-header">
       <h1 class="page-title">规则引擎</h1>
-      <el-button type="primary" class="add-rule-btn" @click="addRule">
-        <el-icon><Plus /></el-icon>
-        添加规则
-      </el-button>
     </div>
 
-    <!-- 搜索 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchQuery"
-        placeholder="搜索规则名称或描述"
-        clearable
-        style="width: 400px;"
-        @keydown.enter="searchRules"
-      >
-        <template #append>
-          <el-button @click="searchRules">
-            <el-icon><Search /></el-icon>
+    <!-- 规则列表面板 -->
+    <div class="list-panel" v-loading="loading">
+      <div class="list-toolbar">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索规则名称或描述"
+          prefix-icon="Search"
+          clearable
+          style="width: 320px;"
+          @keydown.enter="searchRules"
+        />
+        <div class="toolbar-right">
+          <el-button @click="searchRules">搜索</el-button>
+          <el-button type="primary" @click="addRule">
+            <el-icon><Plus /></el-icon>添加规则
           </el-button>
-        </template>
-      </el-input>
-    </div>
-
-    <!-- 规则列表 -->
-    <div class="rule-list card" v-loading="loading">
+        </div>
+      </div>
       <el-table
         :data="paginatedRules"
         style="width: 100%"
         size="small"
         :row-style="{ height: '48px' }"
       >
-        <el-table-column prop="name" label="规则名称" />
-        <el-table-column prop="description" label="规则描述" />
-        <el-table-column prop="condition" label="触发条件" />
-        <el-table-column prop="action" label="执行动作" />
-        <el-table-column prop="status" label="状态">
+        <el-table-column prop="name" label="规则名称" show-overflow-tooltip />
+        <el-table-column prop="description" label="规则描述" show-overflow-tooltip />
+        <el-table-column prop="condition" label="触发条件" show-overflow-tooltip />
+        <el-table-column prop="action" label="执行动作" show-overflow-tooltip />
+        <el-table-column prop="status" label="状态" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="rule-status" :class="getStatusClass(row.status)">
               {{ getStatusText(row.status) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" />
-        <el-table-column label="操作" fixed="right">
+        <el-table-column prop="updatedAt" label="更新时间" show-overflow-tooltip />
+        <el-table-column label="操作" fixed="right" class-name="table-action-column" width="320">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -225,8 +220,7 @@ const searchRules = () => {
         </el-table-column>
       </el-table>
       
-      <!-- 分页组件 -->
-      <div class="pagination-container">
+      <div class="list-footer">
         <el-pagination
           v-model:current-page="pagination.currentPage"
           v-model:page-size="pagination.pageSize"
@@ -249,15 +243,16 @@ const searchRules = () => {
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
 }
+
 
 .rule-status {
   padding: 2px 8px;

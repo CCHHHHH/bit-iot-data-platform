@@ -189,41 +189,33 @@ const getPermissionTypeTag = (type: string) => {
   <div class="permission-management-view">
     <div class="page-header">
       <h1 class="page-title">权限管理</h1>
-      <div>
-        <el-button 
-          type="danger" 
-          :disabled="selectedPermissionIds.length === 0"
-          @click="batchDelete"
-        >
-          <el-icon><Delete /></el-icon>
-          批量删除
-        </el-button>
-        <el-button type="primary" @click="addPermission">
-          <el-icon><Plus /></el-icon>
-          添加权限
-        </el-button>
-      </div>
     </div>
 
-    <!-- 搜索 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchQuery"
-        placeholder="搜索权限名称"
-        clearable
-        style="width: 400px;"
-        @keydown.enter="searchPermissions"
-      >
-        <template #append>
-          <el-button @click="searchPermissions">
-            <el-icon><Search /></el-icon>
+    <!-- 权限列表面板 -->
+    <div class="list-panel" v-loading="loading">
+      <div class="list-toolbar">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索权限名称"
+          prefix-icon="Search"
+          clearable
+          style="width: 320px;"
+          @keydown.enter="searchPermissions"
+        />
+        <div class="toolbar-right">
+          <el-button @click="searchPermissions">搜索</el-button>
+          <el-button
+            type="danger"
+            :disabled="selectedPermissionIds.length === 0"
+            @click="batchDelete"
+          >
+            <el-icon><Delete /></el-icon>批量删除
           </el-button>
-        </template>
-      </el-input>
-    </div>
-
-    <!-- 权限列表 -->
-    <div class="permission-list card" v-loading="loading">
+          <el-button type="primary" @click="addPermission">
+            <el-icon><Plus /></el-icon>添加权限
+          </el-button>
+        </div>
+      </div>
       <el-table
         :data="permissions"
         style="width: 100%"
@@ -231,18 +223,18 @@ const getPermissionTypeTag = (type: string) => {
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="permissionName" label="权限名称" />
-        <el-table-column prop="permissionCode" label="权限标识" />
-        <el-table-column prop="permissionType" label="权限类型">
+        <el-table-column prop="permissionName" label="权限名称" show-overflow-tooltip />
+        <el-table-column prop="permissionCode" label="权限标识" show-overflow-tooltip />
+        <el-table-column prop="permissionType" label="权限类型" show-overflow-tooltip>
           <template #default="{ row }">
             <el-tag :type="getPermissionTypeTag(row.permissionType).type">
               {{ getPermissionTypeTag(row.permissionType).text }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="描述" />
-        <el-table-column prop="createTime" label="创建时间" />
-        <el-table-column label="操作" fixed="right" width="120">
+        <el-table-column prop="description" label="描述" show-overflow-tooltip />
+        <el-table-column prop="createTime" label="创建时间" show-overflow-tooltip />
+        <el-table-column label="操作" fixed="right" width="180" class-name="table-action-column">
           <template #default="{ row }">
             <el-button
               type="danger"
@@ -256,8 +248,7 @@ const getPermissionTypeTag = (type: string) => {
           </template>
         </el-table-column>
       </el-table>
-      <!-- 分页 -->
-      <div class="pagination-container" style="margin-top: 24px; padding: 0 16px;">
+      <div class="list-footer">
         <el-pagination
           v-model:current-page="pagination.currentPage"
           v-model:page-size="pagination.pageSize"
@@ -339,15 +330,16 @@ const getPermissionTypeTag = (type: string) => {
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
 }
+
 
 .delete-btn {
   margin-right: 0;

@@ -1,43 +1,105 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ================================================================
+   IoT Data Platform — Global Design System v2.0
+   Theme: Professional IoT Command Center
+   ================================================================ */
+
+/* ── 1. Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Primary */
+  --clr-primary:        #1668DC;
+  --clr-primary-light:  #4096FF;
+  --clr-primary-dark:   #0958D9;
+  --clr-primary-bg:     #E6F4FF;
+
+  /* Accent – IoT Cyan */
+  --clr-accent:         #06B6D4;
+  --clr-accent-light:   #22D3EE;
+  --clr-accent-bg:      #ECFEFF;
+
+  /* Status */
+  --clr-success:        #10B981;
+  --clr-success-light:  #34D399;
+  --clr-success-bg:     #ECFDF5;
+  --clr-warning:        #F59E0B;
+  --clr-warning-bg:     #FFFBEB;
+  --clr-danger:         #EF4444;
+  --clr-danger-bg:      #FEF2F2;
+  --clr-info:           #6366F1;
+  --clr-info-bg:        #EEF2FF;
+
+  /* Text */
+  --clr-text-primary:   #111827;
+  --clr-text-secondary: #6B7280;
+  --clr-text-muted:     #9CA3AF;
+  --clr-text-inverse:   #F9FAFB;
+
+  /* Surfaces */
+  --clr-page-bg:        #F1F5F9;
+  --clr-card-bg:        #FFFFFF;
+  --clr-sidebar:        #0B1F3A;
+
+  /* Borders */
+  --clr-border:         #E5E7EB;
+  --clr-border-light:   #F3F4F6;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+  --shadow-glow-primary: 0 4px 14px rgba(22, 104, 220, 0.30);
+  --shadow-glow-accent:  0 4px 14px rgba(6, 182, 212, 0.30);
+
+  /* Radius */
+  --r-xs:   4px;
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-xl:   20px;
+  --r-full: 9999px;
+
+  /* Motion */
+  --ease:      0.18s ease;
+  --ease-md:   0.28s ease;
+  --ease-slow: 0.40s ease;
+
+  /* ── Backward-compat aliases ── */
+  --primary-color:      var(--clr-primary);
+  --primary-light:      var(--clr-primary-light);
+  --primary-dark:       var(--clr-primary-dark);
+  --success-color:      var(--clr-success);
+  --warning-color:      var(--clr-warning);
+  --danger-color:       var(--clr-danger);
+  --info-color:         var(--clr-info);
+  --text-primary:       var(--clr-text-primary);
+  --text-secondary:     var(--clr-text-secondary);
+  --background-light:   var(--clr-page-bg);
+  --background-white:   var(--clr-card-bg);
+  --border-color:       var(--clr-border);
+  --card-shadow:        var(--shadow-md);
 }
 
+/* ── 2. Base Reset ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+               'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light;
-  color: #1a2b47;
-  background-color: #f5f7fa;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  color: var(--clr-text-primary);
+  background: var(--clr-page-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* 物联网主题色彩变量 */
-  --primary-color: #0066cc;
-  --primary-light: #3399ff;
-  --primary-dark: #004c99;
-  --success-color: #00b386;
-  --warning-color: #ff9933;
-  --danger-color: #ff4d4f;
-  --info-color: #1890ff;
-  --text-primary: #1a2b47;
-  --text-secondary: #4a5568;
-  --background-light: #f5f7fa;
-  --background-white: #ffffff;
-  --border-color: #e2e8f0;
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  text-rendering: optimizeLegibility;
+  color-scheme: light;
+  font-synthesis: none;
 }
 
 body {
-  margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--clr-page-bg);
 }
 
 #app {
@@ -46,198 +108,548 @@ body {
   overflow: hidden;
 }
 
-/* 自定义滚动条 */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* ── 3. Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: #CBD5E1; border-radius: var(--r-full); }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* 通用样式 */
+/* ── 4. Utility: Page Layout ──────────────────────────────────── */
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  color: var(--text-primary);
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--clr-text-primary);
+  margin-bottom: 22px;
   display: flex;
   align-items: center;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
 }
-
 .page-title::before {
   content: '';
-  width: 4px;
+  display: inline-block;
+  width: 3px;
   height: 20px;
-  background-color: var(--primary-color);
-  border-radius: 2px;
-  margin-right: 12px;
+  background: linear-gradient(180deg, var(--clr-primary) 0%, var(--clr-accent) 100%);
+  border-radius: var(--r-full);
+  margin-right: 10px;
+  flex-shrink: 0;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--clr-text-primary);
+  margin: 0;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.pagination-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── 5. Card ──────────────────────────────────────────────────── */
 .card {
-  background: var(--background-white);
-  border-radius: 10px;
-  box-shadow: var(--card-shadow);
-  padding: 24px;
-  margin-bottom: 24px;
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  background: var(--clr-card-bg);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border: 1px solid var(--clr-border-light);
+  transition: box-shadow var(--ease-md), transform var(--ease-md);
 }
-
 .card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
-/* 按钮样式 */
-.el-button--primary {
-  background-color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-  font-size: 14px !important;
+/* ── 6. Status Indicators ─────────────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.online {
+  background: var(--clr-success);
+  box-shadow: 0 0 0 0 rgba(16,185,129,0.4);
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+.status-dot.offline  { background: #9CA3AF; }
+.status-dot.warning  { background: var(--clr-warning); animation: pulse-ring 1.8s ease-in-out infinite; }
+.status-dot.error    { background: var(--clr-danger);  animation: pulse-ring 1.2s ease-in-out infinite; }
+.status-dot.idle     { background: #D1D5DB; }
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.4); }
+  70%  { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0   rgba(16,185,129,0); }
+}
+
+/* ── 7. IoT Badge ─────────────────────────────────────────────── */
+.iot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.iot-badge.success { background: var(--clr-success-bg); color: #059669; }
+.iot-badge.warning { background: var(--clr-warning-bg); color: #D97706; }
+.iot-badge.danger  { background: var(--clr-danger-bg);  color: #DC2626; }
+.iot-badge.info    { background: var(--clr-primary-bg); color: var(--clr-primary); }
+.iot-badge.neutral { background: #F3F4F6; color: #6B7280; }
+.iot-badge.accent  { background: var(--clr-accent-bg);  color: #0891B2; }
+
+/* backward-compat status classes */
+.status-connected, .status-active   { background: var(--clr-success-bg) !important; color: #059669 !important; }
+.status-disconnected                { background: var(--clr-danger-bg)   !important; color: #DC2626 !important; }
+.status-inactive                    { background: #F3F4F6                !important; color: #6B7280 !important; }
+
+/* ── 8. Element Plus: Buttons ─────────────────────────────────── */
+.el-button {
+  border-radius: var(--r-md) !important;
   font-weight: 500 !important;
-  transition: all 0.3s ease !important;
+  letter-spacing: 0.3px !important;
+  transition: all var(--ease) !important;
 }
+.el-button + .el-button { margin-left: 8px; }
 
-.el-button--primary:hover {
-  background-color: var(--primary-light) !important;
-  border-color: var(--primary-light) !important;
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3) !important;
+.el-button--primary {
+  background: var(--clr-primary) !important;
+  border-color: var(--clr-primary) !important;
+}
+.el-button--primary:not(.is-disabled):hover,
+.el-button--primary:not(.is-disabled):focus {
+  background: var(--clr-primary-light) !important;
+  border-color: var(--clr-primary-light) !important;
+  box-shadow: var(--shadow-glow-primary) !important;
 }
 
 .el-button--success {
-  background-color: var(--success-color) !important;
-  border-color: var(--success-color) !important;
-  border-radius: 8px !important;
+  background: var(--clr-success) !important;
+  border-color: var(--clr-success) !important;
+}
+.el-button--success:not(.is-disabled):hover {
+  background: var(--clr-success-light) !important;
+  border-color: var(--clr-success-light) !important;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.30) !important;
 }
 
 .el-button--warning {
-  background-color: var(--warning-color) !important;
-  border-color: var(--warning-color) !important;
-  border-radius: 8px !important;
+  background: var(--clr-warning) !important;
+  border-color: var(--clr-warning) !important;
+  color: #fff !important;
+}
+.el-button--warning:not(.is-disabled):hover {
+  box-shadow: 0 4px 14px rgba(245,158,11,0.35) !important;
 }
 
 .el-button--danger {
-  background-color: var(--danger-color) !important;
-  border-color: var(--danger-color) !important;
-  border-radius: 8px !important;
+  background: var(--clr-danger) !important;
+  border-color: var(--clr-danger) !important;
+}
+.el-button--danger:not(.is-disabled):hover {
+  box-shadow: 0 4px 14px rgba(239,68,68,0.30) !important;
 }
 
-/* 表格样式 */
+.el-button--default:not(.is-disabled):hover {
+  border-color: var(--clr-primary) !important;
+  color: var(--clr-primary) !important;
+  background: var(--clr-primary-bg) !important;
+}
+
+.el-button--text, .el-button.is-text {
+  color: var(--clr-primary) !important;
+  font-weight: 500 !important;
+}
+.el-button--text:hover, .el-button.is-text:hover {
+  background: var(--clr-primary-bg) !important;
+}
+
+/* Small button radius adjustment */
+.el-button.el-button--small {
+  border-radius: var(--r-sm) !important;
+}
+
+/* ── 9. Element Plus: Tables ──────────────────────────────────── */
 .el-table {
-  border-radius: 10px !important;
+  border-radius: var(--r-lg) !important;
   overflow: hidden !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
-  margin-bottom: 24px !important;
+  border: 1px solid var(--clr-border-light) !important;
+  box-shadow: var(--shadow-xs) !important;
+  font-size: 14px !important;
+  margin-bottom: 0 !important;
 }
-
-.el-table th {
-  background-color: #f8fafc !important;
-  color: var(--text-primary) !important;
+.el-table th.el-table__cell {
+  background: #F8FAFC !important;
+  color: var(--clr-text-secondary) !important;
   font-weight: 600 !important;
+  font-size: 12px !important;
+  padding: 11px 16px !important;
+  border-bottom: 1px solid var(--clr-border) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.el-table td.el-table__cell {
+  padding: 13px 16px !important;
+  color: var(--clr-text-primary) !important;
+  border-bottom: 1px solid var(--clr-border-light) !important;
+  vertical-align: middle !important;
+}
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: #FAFBFC !important;
+}
+.el-table__body tr:hover > td.el-table__cell {
+  background: #EFF6FF !important;
+  transition: background var(--ease);
+}
+.el-table .el-table__empty-block {
+  background: var(--clr-card-bg) !important;
+  min-height: 200px !important;
+}
+.el-table .el-table__empty-text {
+  color: var(--clr-text-muted) !important;
   font-size: 14px !important;
-  padding: 16px !important;
-  border-bottom: 1px solid var(--border-color) !important;
 }
 
-.el-table td {
-  padding: 16px !important;
+/* ── 10. Element Plus: Forms ──────────────────────────────────── */
+.el-input__wrapper {
+  border-radius: var(--r-md) !important;
+  box-shadow: 0 0 0 1px var(--clr-border) !important;
+  transition: all var(--ease) !important;
+  background: #fff !important;
+}
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px #93C5FD !important;
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 2px rgba(22,104,220,0.20), 0 0 0 1px var(--clr-primary) !important;
+}
+.el-input__inner {
+  color: var(--clr-text-primary) !important;
   font-size: 14px !important;
-  color: var(--text-secondary) !important;
-  border-bottom: 1px solid var(--border-color) !important;
+}
+.el-input__inner::placeholder { color: var(--clr-text-muted) !important; }
+
+.el-textarea__inner {
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--clr-border) !important;
+  color: var(--clr-text-primary) !important;
+  font-size: 14px !important;
+  transition: all var(--ease) !important;
+  resize: vertical !important;
+}
+.el-textarea__inner:hover { border-color: #93C5FD !important; }
+.el-textarea__inner:focus {
+  border-color: var(--clr-primary) !important;
+  box-shadow: 0 0 0 2px rgba(22,104,220,0.18) !important;
+  outline: none !important;
 }
 
-.el-table tr:hover > td {
-  background-color: #f8fafc !important;
-}
-
-/* 表单样式 */
-.el-form-item {
-  margin-bottom: 20px !important;
+.el-select .el-input__wrapper { border-radius: var(--r-md) !important; }
+.el-select-dropdown { border-radius: var(--r-md) !important; }
+.el-select-dropdown__item.selected { color: var(--clr-primary) !important; }
+.el-select-dropdown__item.hover, .el-select-dropdown__item:hover {
+  background: var(--clr-primary-bg) !important;
 }
 
 .el-form-item__label {
   font-weight: 500 !important;
-  color: var(--text-primary) !important;
+  color: var(--clr-text-primary) !important;
   font-size: 14px !important;
 }
+.el-form-item { margin-bottom: 20px !important; }
+.el-form-item__error { font-size: 12px !important; margin-top: 4px !important; }
 
-.el-input {
-  border-radius: 8px !important;
-  border: 1px solid var(--border-color) !important;
-  transition: all 0.3s ease !important;
-}
-
-.el-input:focus-within {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1) !important;
-}
-
-/* 标签样式 */
+/* ── 11. Element Plus: Tags ───────────────────────────────────── */
 .el-tag {
-  border-radius: 6px !important;
-  padding: 4px 12px !important;
+  border-radius: var(--r-full) !important;
+  padding: 0 10px !important;
+  height: 22px !important;
+  line-height: 22px !important;
   font-size: 12px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+.el-tag--success {
+  background: var(--clr-success-bg) !important;
+  color: #059669 !important;
+}
+.el-tag--warning {
+  background: var(--clr-warning-bg) !important;
+  color: #D97706 !important;
+}
+.el-tag--danger {
+  background: var(--clr-danger-bg) !important;
+  color: #DC2626 !important;
+}
+.el-tag--info {
+  background: #F3F4F6 !important;
+  color: #6B7280 !important;
+}
+.el-tag--primary {
+  background: var(--clr-primary-bg) !important;
+  color: var(--clr-primary) !important;
 }
 
-/* 状态样式 */
-.status-connected {
-  background-color: rgba(0, 179, 134, 0.1) !important;
-  color: var(--success-color) !important;
+/* ── 12. Element Plus: Dialogs ────────────────────────────────── */
+.el-dialog {
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-xl) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--clr-border-light) !important;
+}
+.el-dialog__header {
+  border-bottom: 1px solid var(--clr-border-light) !important;
+  padding: 18px 24px !important;
+  background: #FAFBFC !important;
+  margin-right: 0 !important;
+}
+.el-dialog__title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--clr-text-primary) !important;
+}
+.el-dialog__headerbtn {
+  top: 18px !important;
+  right: 18px !important;
+}
+.el-dialog__body {
+  padding: 24px !important;
+  background: var(--clr-card-bg) !important;
+  color: var(--clr-text-primary) !important;
+}
+.el-dialog__footer {
+  padding: 14px 24px !important;
+  border-top: 1px solid var(--clr-border-light) !important;
+  background: #FAFBFC !important;
 }
 
-.status-disconnected {
-  background-color: rgba(255, 77, 79, 0.1) !important;
-  color: var(--danger-color) !important;
+/* ── 13. Element Plus: Pagination ─────────────────────────────── */
+.el-pagination {
+  --el-color-primary: var(--clr-primary);
+  gap: 4px;
+}
+.el-pagination .el-pager li {
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  transition: all var(--ease) !important;
+}
+.el-pagination .el-pager li.is-active {
+  background: var(--clr-primary) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-glow-primary) !important;
+}
+.el-pagination .el-pager li:not(.is-active):hover {
+  background: var(--clr-primary-bg) !important;
+  color: var(--clr-primary) !important;
+}
+.el-pagination button {
+  border-radius: var(--r-sm) !important;
+  height: 32px !important;
 }
 
-.status-active {
-  background-color: rgba(0, 179, 134, 0.1) !important;
-  color: var(--success-color) !important;
+/* ── 14. Element Plus: Dropdown ───────────────────────────────── */
+.el-dropdown-menu {
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--clr-border-light) !important;
+  box-shadow: var(--shadow-lg) !important;
+  overflow: hidden !important;
+  padding: 4px !important;
+}
+.el-dropdown-menu__item {
+  border-radius: var(--r-sm) !important;
+  padding: 8px 14px !important;
+  font-size: 14px !important;
+  color: var(--clr-text-primary) !important;
+  transition: background var(--ease) !important;
+  margin: 1px 0 !important;
+}
+.el-dropdown-menu__item:hover {
+  background: var(--clr-primary-bg) !important;
+  color: var(--clr-primary) !important;
+}
+.el-dropdown-menu__item--divided {
+  border-top: 1px solid var(--clr-border-light) !important;
+  margin-top: 4px !important;
+  padding-top: 8px !important;
 }
 
-.status-inactive {
-  background-color: rgba(144, 147, 153, 0.1) !important;
-  color: #909399 !important;
+/* ── 15. Element Plus: Popper / MessageBox ────────────────────── */
+.el-popper { border-radius: var(--r-md) !important; }
+.el-message-box {
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-xl) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--clr-border-light) !important;
+}
+.el-message-box__header {
+  background: #FAFBFC !important;
+  border-bottom: 1px solid var(--clr-border-light) !important;
+  padding: 18px 20px 14px !important;
+}
+.el-message-box__title { font-size: 15px !important; font-weight: 600 !important; }
+.el-message-box__content { padding: 20px !important; color: var(--clr-text-secondary) !important; }
+.el-message-box__btns { padding: 12px 20px !important; border-top: 1px solid var(--clr-border-light) !important; }
+
+/* ── 16. Element Plus: Tree ───────────────────────────────────── */
+.el-tree-node__content {
+  border-radius: var(--r-sm) !important;
+  height: auto !important;
+  padding-top: 5px !important;
+  padding-right: 4px !important;
+  padding-bottom: 5px !important;
+  transition: background var(--ease) !important;
+}
+.el-tree-node__content:hover { background: var(--clr-primary-bg) !important; }
+.el-tree-node.is-current > .el-tree-node__content {
+  background: var(--clr-primary-bg) !important;
+  color: var(--clr-primary) !important;
+}
+.el-tree { background: transparent !important; }
+
+/* ── 17. Element Plus: Card ───────────────────────────────────── */
+.el-card {
+  border-radius: var(--r-lg) !important;
+  border: 1px solid var(--clr-border-light) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: box-shadow var(--ease-md) !important;
+  overflow: hidden !important;
+}
+.el-card:hover { box-shadow: var(--shadow-md) !important; }
+.el-card__header {
+  border-bottom: 1px solid var(--clr-border-light) !important;
+  font-weight: 600 !important;
+  padding: 14px 20px !important;
+  font-size: 15px !important;
+  color: var(--clr-text-primary) !important;
+  background: #FAFBFC !important;
+}
+.el-card__body { padding: 20px !important; }
+
+/* ── 18. Element Plus: Tabs ───────────────────────────────────── */
+.el-tabs__item {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--clr-text-secondary) !important;
+  padding: 0 16px !important;
+  height: 44px !important;
+  transition: color var(--ease) !important;
+}
+.el-tabs__item.is-active {
+  color: var(--clr-primary) !important;
+  font-weight: 600 !important;
+}
+.el-tabs__item:hover { color: var(--clr-primary) !important; }
+.el-tabs__active-bar {
+  background: var(--clr-primary) !important;
+  height: 2px !important;
+  border-radius: var(--r-full) !important;
+}
+.el-tabs__nav-wrap::after {
+  height: 1px !important;
+  background: var(--clr-border-light) !important;
 }
 
-/* 响应式设计 */
-@media screen and (max-width: 768px) {
-  .app-container {
-    flex-direction: column;
-  }
+/* ── 19. Element Plus: Alert ──────────────────────────────────── */
+.el-alert {
+  border-radius: var(--r-md) !important;
+  border: none !important;
+  padding: 12px 16px !important;
+}
+.el-alert--success { background: var(--clr-success-bg) !important; }
+.el-alert--warning { background: var(--clr-warning-bg) !important; }
+.el-alert--error   { background: var(--clr-danger-bg)  !important; }
+.el-alert--info    { background: var(--clr-primary-bg) !important; }
 
-  .sidebar {
-    width: 100% !important;
-    height: auto;
-  }
+/* ── 20. Element Plus: Breadcrumb ─────────────────────────────── */
+.el-breadcrumb__inner {
+  color: var(--clr-text-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+}
+.el-breadcrumb__item:last-child .el-breadcrumb__inner {
+  color: var(--clr-text-primary) !important;
+  font-weight: 500 !important;
+}
+.el-breadcrumb__separator { color: var(--clr-text-muted) !important; }
 
-  .main-container {
-    flex: 1;
-  }
+/* ── 21. Element Plus: Notification / Message ─────────────────── */
+.el-message {
+  border-radius: var(--r-md) !important;
+  border: none !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 12px 18px !important;
+}
+.el-notification {
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+  border: 1px solid var(--clr-border-light) !important;
+}
 
-  .page-title {
-    font-size: 20px;
-  }
+/* ── 22. Element Plus: Loading ────────────────────────────────── */
+.el-loading-mask { background: rgba(255,255,255,0.85) !important; backdrop-filter: blur(4px); }
+.el-loading-spinner .path { stroke: var(--clr-primary) !important; }
 
-  .card {
-    padding: 20px;
-    margin-bottom: 20px;
-  }
+/* ── 23. Element Plus: Checkbox / Radio ───────────────────────── */
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background: var(--clr-primary) !important;
+  border-color: var(--clr-primary) !important;
+}
+.el-checkbox__inner {
+  border-radius: var(--r-xs) !important;
+  transition: all var(--ease) !important;
+}
+.el-checkbox__label { font-size: 14px !important; color: var(--clr-text-primary) !important; }
 
-  .content {
-    padding: 20px;
-  }
+.el-radio__input.is-checked .el-radio__inner {
+  background: var(--clr-primary) !important;
+  border-color: var(--clr-primary) !important;
+}
+.el-radio__label { font-size: 14px !important; color: var(--clr-text-primary) !important; }
+
+/* ── 24. Element Plus: Switch ─────────────────────────────────── */
+.el-switch.is-checked .el-switch__core { background: var(--clr-primary) !important; border-color: var(--clr-primary) !important; }
+
+/* ── 25. Page Transitions ─────────────────────────────────────── */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.22s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.slide-up-enter-active { transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+.slide-up-enter-from { opacity: 0; transform: translateY(10px); }
+
+/* ── 26. Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-title   { font-size: 18px; margin-bottom: 16px; }
+  .card         { padding: 16px; margin-bottom: 14px; }
+  .search-bar   { flex-direction: column; align-items: stretch; }
 }

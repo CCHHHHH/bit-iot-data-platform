@@ -241,40 +241,34 @@ const getPermissionTagType = (permissionType: string) => {
   <div class="role-management-view">
     <div class="page-header">
       <h1 class="page-title">角色管理</h1>
-      <el-button type="primary" class="add-role-btn" @click="addRole">
-        <el-icon><Plus /></el-icon>
-        添加角色
-      </el-button>
     </div>
 
-    <!-- 搜索 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchQuery"
-        placeholder="搜索角色名称"
-        prefix-icon="Search"
-        clearable
-        style="width: 400px;"
-        @keydown.enter="searchRoles"
-      >
-        <template #append>
-          <el-button @click="searchRoles">
-            <el-icon><Search /></el-icon>
+    <!-- 角色列表面板 -->
+    <div class="list-panel" v-loading="loading">
+      <div class="list-toolbar">
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索角色名称"
+          prefix-icon="Search"
+          clearable
+          style="width: 320px;"
+          @keydown.enter="searchRoles"
+        />
+        <div class="toolbar-right">
+          <el-button @click="searchRoles">搜索</el-button>
+          <el-button type="primary" @click="addRole">
+            <el-icon><Plus /></el-icon>添加角色
           </el-button>
-        </template>
-      </el-input>
-    </div>
-
-    <!-- 角色列表 -->
-    <div class="role-list card" v-loading="loading">
+        </div>
+      </div>
       <el-table
         :data="roles"
         style="width: 100%"
         size="small"
       >
-        <el-table-column prop="roleName" label="角色名称" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column label="权限" min-width="250">
+        <el-table-column prop="roleName" label="角色名称" show-overflow-tooltip />
+        <el-table-column prop="description" label="描述" show-overflow-tooltip />
+        <el-table-column label="权限" min-width="250" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="permission-tags-container">
               <el-tooltip 
@@ -316,9 +310,9 @@ const getPermissionTagType = (permissionType: string) => {
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" />
-        <el-table-column prop="updateTime" label="更新时间" />
-        <el-table-column label="操作" fixed="right" width="320">
+        <el-table-column prop="createTime" label="创建时间" show-overflow-tooltip />
+        <el-table-column prop="updateTime" label="更新时间" show-overflow-tooltip />
+        <el-table-column label="操作" fixed="right" width="320" class-name="table-action-column">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -350,8 +344,7 @@ const getPermissionTagType = (permissionType: string) => {
           </template>
         </el-table-column>
       </el-table>
-      <!-- 分页 -->
-      <div class="pagination-container" style="margin-top: 24px; padding: 0 16px;">
+      <div class="list-footer">
         <el-pagination
           v-model:current-page="pagination.currentPage"
           v-model:page-size="pagination.pageSize"
@@ -454,15 +447,16 @@ const getPermissionTagType = (permissionType: string) => {
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
 }
+
 
 .edit-btn {
   margin-right: 8px;

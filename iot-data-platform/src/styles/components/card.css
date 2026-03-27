@@ -1,0 +1,341 @@
+/* ========== 卡片组件样式 ========== */
+
+.iot-card {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.iot-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 卡片头部 */
+.iot-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-5) var(--spacing-6);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+}
+
+.iot-card__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.iot-card__subtitle {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* 卡片主体 */
+.iot-card__body {
+  padding: var(--spacing-6);
+}
+
+/* 卡片底部 */
+.iot-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4) var(--spacing-6);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+}
+
+/* 卡片变体 */
+.iot-card--interactive {
+  cursor: pointer;
+}
+
+.iot-card--interactive:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.iot-card--elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.iot-card--outlined {
+  background-color: transparent;
+  border-width: 2px;
+}
+
+.iot-card--compact .iot-card__body {
+  padding: var(--spacing-4);
+}
+
+/* ========== 状态指示器 ========== */
+
+.iot-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* 状态点 */
+.iot-status__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.iot-status__dot--online {
+  background-color: var(--color-success);
+  box-shadow: 0 0 8px var(--color-success-bg);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.iot-status__dot--offline {
+  background-color: var(--color-danger);
+  animation: none;
+}
+
+.iot-status__dot--warning {
+  background-color: var(--color-warning);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.iot-status__dot--unknown {
+  background-color: var(--color-info);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* 状态标签 */
+.iot-status__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+/* 状态徽章 */
+.iot-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-full);
+}
+
+.iot-status-badge--online {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-dark);
+}
+
+.iot-status-badge--offline {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-dark);
+}
+
+.iot-status-badge--warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+}
+
+.iot-status-badge--unknown {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-dark);
+}
+
+[data-theme='dark'] .iot-status-badge--online {
+  color: var(--color-success);
+}
+
+[data-theme='dark'] .iot-status-badge--offline {
+  color: var(--color-danger);
+}
+
+[data-theme='dark'] .iot-status-badge--warning {
+  color: var(--color-warning);
+}
+
+[data-theme='dark'] .iot-status-badge--unknown {
+  color: var(--color-info);
+}
+
+/* ========== 设备卡片 ========== */
+
+.iot-device-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.iot-device-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--color-border);
+  transition: background-color var(--transition-fast);
+}
+
+.iot-device-card[data-status='online']::before {
+  background-color: var(--color-success);
+}
+
+.iot-device-card[data-status='offline']::before {
+  background-color: var(--color-danger);
+}
+
+.iot-device-card[data-status='warning']::before {
+  background-color: var(--color-warning);
+}
+
+.iot-device-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.iot-device-card__name {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.iot-device-card__location {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.iot-device-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.iot-device-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.iot-device-card__stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.iot-device-card__stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* ========== 仪表板卡片 ========== */
+
+.iot-dashboard-card {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  transition: all var(--transition-normal);
+}
+
+.iot-dashboard-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-300);
+}
+
+.iot-dashboard-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.iot-dashboard-card__title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.iot-dashboard-card__icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+[data-theme='dark'] .iot-dashboard-card__icon {
+  background-color: var(--color-primary-200);
+  color: var(--color-primary-500);
+}
+
+.iot-dashboard-card__value {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+.iot-dashboard-card__change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.iot-dashboard-card__change--positive {
+  color: var(--color-success);
+}
+
+.iot-dashboard-card__change--negative {
+  color: var(--color-danger);
+}
+
+/* 可访问性 */
+@media (prefers-reduced-motion: reduce) {
+  .iot-card,
+  .iot-card--interactive,
+  .iot-device-card::before,
+  .iot-dashboard-card {
+    transition: none;
+  }
+  
+  .iot-status__dot--online,
+  .iot-status__dot--warning {
+    animation: none;
+  }
+}

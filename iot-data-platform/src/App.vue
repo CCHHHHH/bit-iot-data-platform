@@ -1,327 +1,500 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { HomeFilled, Monitor, Warning, Menu, DataAnalysis, Connection, User, UserFilled, Key } from '@element-plus/icons-vue'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import {
+  HomeFilled, Monitor, Warning, DataAnalysis, Connection,
+  User, UserFilled, Key, Expand, Fold, ArrowDown
+} from '@element-plus/icons-vue'
+import { logout } from './api/index'
 
 const router = useRouter()
+const route  = useRoute()
 const isCollapse = ref(false)
 
-const menuItems = [
+async function handleLogout() {
+  try {
+    await ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
+      confirmButtonText: '退出',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    try {
+      await logout()
+    } catch {
+      // 即使接口失败也继续执行本地退出
+    }
+    localStorage.removeItem('token')
+    ElMessage.success('已退出登录')
+    router.push('/login')
+  } catch {
+    // 用户点取消，不做任何处理
+  }
+}
+
+/* ── Menu structure with groups ── */
+const menuGroups = [
   {
-    path: '/dashboard',
-    icon: HomeFilled,
-    title: '数据仪表盘'
+    label: '概览',
+    items: [
+      { path: '/dashboard',    icon: HomeFilled,   title: '数据仪表盘' }
+    ]
   },
   {
-    path: '/devices',
-    icon: Monitor,
-    title: '设备管理'
+    label: '设备中心',
+    items: [
+      { path: '/devices',      icon: Monitor,      title: '设备管理'   },
+      { path: '/integrations', icon: Connection,   title: '设备集成'   }
+    ]
   },
   {
-    path: '/alerts',
-    icon: Warning,
-    title: '告警管理'
+    label: '监控告警',
+    items: [
+      { path: '/alerts',       icon: Warning,      title: '告警管理'   },
+      { path: '/rules',        icon: DataAnalysis, title: '规则引擎'   }
+    ]
   },
   {
-    path: '/rules',
-    icon: DataAnalysis,
-    title: '规则引擎'
-  },
-  {
-    path: '/integrations',
-    icon: Connection,
-    title: '设备集成'
-  },
-  {
-    path: '/users',
-    icon: User,
-    title: '用户管理'
-  },
-  {
-    path: '/roles',
-    icon: UserFilled,
-    title: '角色管理'
-  },
-  {
-    path: '/permissions',
-    icon: Key,
-    title: '权限管理'
+    label: '系统管理',
+    items: [
+      { path: '/users',        icon: User,         title: '用户管理'   },
+      { path: '/roles',        icon: UserFilled,   title: '角色管理'   },
+      { path: '/permissions',  icon: Key,          title: '权限管理'   }
+    ]
   }
 ]
+
+/* ── Page title computed from route ── */
+const titleMap: Record<string, string> = {
+  '/dashboard':    '数据仪表盘',
+  '/devices':      '设备管理',
+  '/alerts':       '告警管理',
+  '/rules':        '规则引擎',
+  '/integrations': '设备集成',
+  '/users':        '用户管理',
+  '/roles':        '角色管理',
+  '/permissions':  '权限管理',
+  '/device-catalogs': '设备目录'
+}
+const currentPageTitle = computed(() => {
+  const p = route.path
+  if (p.startsWith('/device/')) return '设备详情'
+  return titleMap[p] || '物联网数据中台'
+})
 </script>
 
 <template>
-  <!-- 登录页面 -->
-  <template v-if="router.currentRoute.value.path === '/login'">
+  <!-- 登录页 -->
+  <template v-if="route.path === '/login'">
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>
   </template>
-  
-  <!-- 主应用 -->
+
+  <!-- 主布局 -->
   <div v-else class="app-container">
-    <!-- 侧边栏 -->
-    <el-aside width="200px" class="sidebar" :class="{ 'collapsed': isCollapse }">
-      <div class="sidebar-header">
-        <div class="logo-container">
-          <div class="logo-icon">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="16" r="14" stroke="url(#logo-gradient)" stroke-width="2"/>
-              <path d="M8 16H24" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-              <path d="M16 8V24" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="16" cy="16" r="4" fill="#0066cc"/>
-              <defs>
-                <linearGradient id="logo-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#0066cc"/>
-                  <stop offset="1" stop-color="#00b386"/>
-                </linearGradient>
-              </defs>
-            </svg>
+
+    <!-- ── 侧边栏 ── -->
+    <aside class="sidebar" :class="{ collapsed: isCollapse }">
+
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <div class="sidebar-logo__icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <!-- Outer ring -->
+            <circle cx="14" cy="14" r="12.5" stroke="url(#sg1)" stroke-width="1.5" opacity="0.6"/>
+            <!-- Inner nodes -->
+            <circle cx="14" cy="6"  r="2.5" fill="#06B6D4"/>
+            <circle cx="22" cy="20" r="2.5" fill="#06B6D4"/>
+            <circle cx="6"  cy="20" r="2.5" fill="#06B6D4"/>
+            <!-- Hub -->
+            <circle cx="14" cy="14" r="3.5" fill="url(#sg2)"/>
+            <!-- Connection lines -->
+            <line x1="14" y1="8.5"  x2="14" y2="11"  stroke="#06B6D4" stroke-width="1.2" opacity="0.8"/>
+            <line x1="20" y1="18.5" x2="16.5" y2="16" stroke="#06B6D4" stroke-width="1.2" opacity="0.8"/>
+            <line x1="8"  y1="18.5" x2="11.5" y2="16" stroke="#06B6D4" stroke-width="1.2" opacity="0.8"/>
+            <defs>
+              <linearGradient id="sg1" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#1668DC"/><stop offset="1" stop-color="#06B6D4"/>
+              </linearGradient>
+              <linearGradient id="sg2" x1="14" y1="10.5" x2="14" y2="17.5" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4096FF"/><stop offset="1" stop-color="#06B6D4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <transition name="logo-fade">
+          <div v-show="!isCollapse" class="sidebar-logo__text">
+            <span class="logo-title">IoT 数据中台</span>
+            <span class="logo-sub">Command Center</span>
           </div>
-          <h1 class="logo">物联网数据中台</h1>
+        </transition>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="sidebar-nav">
+        <el-menu
+          :default-active="route.path"
+          :collapse="isCollapse"
+          :collapse-transition="false"
+          class="sidebar-menu"
+          @select="(key: string) => router.push(key)"
+        >
+          <template v-for="group in menuGroups" :key="group.label">
+            <!-- Group label (hidden when collapsed) -->
+            <div v-show="!isCollapse" class="menu-group-label">{{ group.label }}</div>
+
+            <el-menu-item
+              v-for="item in group.items"
+              :key="item.path"
+              :index="item.path"
+              class="sidebar-item"
+            >
+              <el-icon class="sidebar-item__icon"><component :is="item.icon" /></el-icon>
+              <template #title>
+                <span class="sidebar-item__label">{{ item.title }}</span>
+              </template>
+            </el-menu-item>
+          </template>
+        </el-menu>
+      </nav>
+
+      <!-- System status badge at bottom -->
+      <div v-show="!isCollapse" class="sidebar-footer">
+        <div class="sys-status">
+          <span class="status-dot online"></span>
+          <span class="sys-status__text">系统运行正常</span>
         </div>
       </div>
-      <el-menu
-        :default-active="router.currentRoute.value.path"
-        class="sidebar-menu"
-        @select="(key: string) => router.push(key)"
-      >
-        <template v-for="item in menuItems" :key="item.path">
-          <!-- 所有项都是无子菜单的顶级项 -->
-          <el-menu-item :index="item.path">
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span>{{ item.title }}</span>
-          </el-menu-item>
-        </template>
-      </el-menu>
-    </el-aside>
+    </aside>
 
-    <!-- 主内容区 -->
-    <el-container class="main-container">
-      <!-- 顶部导航 -->
-      <el-header height="60px" class="header">
-        <el-button 
-          type="text" 
-          class="collapse-btn" 
-          @click="isCollapse = !isCollapse"
-        >
-          <el-icon><Menu /></el-icon>
-        </el-button>
+    <!-- ── 主内容 ── -->
+    <div class="main-wrapper">
+
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="collapse-btn" @click="isCollapse = !isCollapse" :title="isCollapse ? '展开菜单' : '收起菜单'">
+            <el-icon :size="17"><Expand v-if="isCollapse" /><Fold v-else /></el-icon>
+          </button>
+          <div class="header-divider"></div>
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item>物联网数据中台</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ currentPageTitle }}</el-breadcrumb-item>
+          </el-breadcrumb>
+        </div>
+
         <div class="header-right">
-          <el-dropdown>
-            <span class="user-info">
-              <el-avatar size="small">Admin</el-avatar>
-              <span>管理员</span>
-            </span>
+          <div class="header-sys-status">
+            <span class="status-dot online" style="margin-right:6px;"></span>
+            <span class="header-sys-text">运行正常</span>
+          </div>
+
+          <div class="header-divider"></div>
+
+          <el-dropdown placement="bottom-end">
+            <div class="user-trigger">
+              <el-avatar :size="30" class="user-avatar">A</el-avatar>
+              <span class="user-name">管理员</span>
+              <el-icon class="user-arrow" :size="13"><ArrowDown /></el-icon>
+            </div>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item>个人中心</el-dropdown-item>
-                <el-dropdown-item>设置</el-dropdown-item>
-                <el-dropdown-item>退出登录</el-dropdown-item>
+                <el-dropdown-item>系统设置</el-dropdown-item>
+                <el-dropdown-item divided style="color:#EF4444" @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
-      </el-header>
+      </header>
 
-      <!-- 内容区 -->
-      <el-main class="content">
+      <!-- Page content -->
+      <main class="app-content">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
           </transition>
         </router-view>
-      </el-main>
-    </el-container>
+      </main>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* ── App Layout ───────────────────────────────────────────────── */
 .app-container {
   display: flex;
   height: 100vh;
   overflow: hidden;
+  background: var(--clr-page-bg);
 }
 
+/* ── Sidebar ──────────────────────────────────────────────────── */
 .sidebar {
-  background-color: #0a1929;
-  color: #1e00ffff;
-  transition: width 0.3s;
-  background-image: linear-gradient(180deg, #0a1929 0%, #0f2a44 100%);
+  width: 220px;
+  min-width: 220px;
+  background: var(--clr-sidebar);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  transition: width var(--ease-md), min-width var(--ease-md);
+  position: relative;
+  z-index: 100;
+  /* Subtle top-right glow */
+  box-shadow: 2px 0 20px rgba(0,0,0,0.18);
 }
-
 .sidebar.collapsed {
   width: 64px;
+  min-width: 64px;
 }
+.sidebar.collapsed .menu-group-label { display: none; }
 
-.sidebar-header {
-  padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+/* Logo area */
+.sidebar-logo {
+  padding: 20px 16px 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.logo-icon {
+.sidebar-logo__icon {
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 102, 204, 0.2);
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0, 102, 204, 0.3);
-  animation: pulse 2s infinite;
+  background: rgba(6,182,212,0.12);
+  border: 1px solid rgba(6,182,212,0.25);
+  border-radius: 10px;
+  flex-shrink: 0;
+  animation: logo-breathe 3s ease-in-out infinite;
+}
+@keyframes logo-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.3); }
+  50%       { box-shadow: 0 0 0 6px rgba(6,182,212,0); }
+}
+.sidebar-logo__text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.logo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #F0F9FF;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+.logo-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  margin-top: 1px;
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 102, 204, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 102, 204, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 102, 204, 0);
-  }
-}
+/* Collapse animation for logo text */
+.logo-fade-enter-active, .logo-fade-leave-active { transition: opacity 0.15s ease, width 0.2s ease; overflow: hidden; }
+.logo-fade-enter-from, .logo-fade-leave-to { opacity: 0; }
 
-.logo {
-  font-size: 20px;
-  font-weight: bold;
-  margin: 0;
-  color: #ffffff;
-  text-shadow: 0 0 10px rgba(0, 102, 204, 0.3);
-  letter-spacing: 1px;
+/* Navigation */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0 8px;
 }
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
 
-.sidebar.collapsed .logo {
-  font-size: 0;
-}
-
-.sidebar.collapsed .logo-container {
-  gap: 0;
-}
-
+/* Override el-menu styling */
 .sidebar-menu {
-  border-right: none;
-  background-color: transparent;
+  border-right: none !important;
+  background: transparent !important;
+  width: 100% !important;
+}
+:deep(.el-menu--collapse) { width: 64px !important; }
+
+/* Group labels */
+.menu-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px 18px 4px;
+  user-select: none;
 }
 
-.sidebar-menu .el-menu-item {
-  height: 64px;
-  line-height: 64px;
-  margin: 8px 12px;
-  border-radius: 10px;
-  color: #e6f1ff;
-  transition: all 0.3s ease;
-  font-size: 14px;
+/* Menu items */
+:deep(.el-menu-item) {
+  height: 42px !important;
+  line-height: 42px !important;
+  margin: 1px 10px !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,0.60) !important;
+  transition: all var(--ease) !important;
+  padding: 0 14px !important;
+  position: relative;
+  overflow: hidden;
+}
+:deep(.el-menu-item:hover) {
+  background: rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.90) !important;
+}
+:deep(.el-menu-item.is-active) {
+  background: rgba(22,104,220,0.18) !important;
+  color: #93C5FD !important;
+}
+:deep(.el-menu-item.is-active::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  background: var(--clr-accent);
+  border-radius: 0 3px 3px 0;
+}
+:deep(.el-menu-item .el-icon) {
+  font-size: 16px !important;
+  margin-right: 10px !important;
+  width: 16px !important;
 }
 
-.sidebar-menu .el-menu-item:hover {
-  color: #ffffff;
-  background-color: rgba(0, 102, 204, 0.2);
+/* Collapsed tooltip */
+:deep(.el-menu--collapse .el-menu-item) {
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+:deep(.el-menu--collapse .el-menu-item .el-icon) {
+  margin-right: 0 !important;
+  font-size: 18px !important;
 }
 
-.sidebar-menu .el-menu-item.is-active {
-  background-color: rgba(0, 102, 204, 0.3);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.sys-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sys-status__text {
+  font-size: 12px;
+  color: rgba(255,255,255,0.40);
 }
 
-.sidebar-menu .el-sub-menu__title {
-  height: 64px;
-  line-height: 64px;
-  margin: 8px 12px;
-  border-radius: 10px;
-  color: #e6f1ff;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.sidebar-menu .el-sub-menu__title:hover {
-  color: #ffffff;
-  background-color: rgba(0, 102, 204, 0.2);
-}
-
-
-
-.main-container {
+/* ── Header ───────────────────────────────────────────────────── */
+.main-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--background-light);
+  overflow: hidden;
+  min-width: 0;
 }
 
-.header {
-  background-color: var(--background-white);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+.app-header {
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid var(--clr-border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0 20px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-xs);
+  z-index: 50;
 }
 
-.collapse-btn {
-  margin-right: 24px;
-  color: var(--text-primary);
-  font-size: 18px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
-
-.collapse-btn:hover {
-  color: var(--primary-color);
-}
-
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
 }
 
-.user-info {
+.collapse-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  color: var(--clr-text-secondary);
+  transition: all var(--ease);
+  flex-shrink: 0;
+}
+.collapse-btn:hover {
+  background: var(--clr-primary-bg);
+  color: var(--clr-primary);
+}
+
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--clr-border);
+  flex-shrink: 0;
+}
+
+.header-sys-status {
+  display: flex;
+  align-items: center;
+}
+.header-sys-text {
+  font-size: 12px;
+  color: var(--clr-text-muted);
+}
+
+/* User dropdown trigger */
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 20px;
-  transition: all 0.3s ease;
-  background-color: rgba(0, 102, 204, 0.05);
+  padding: 5px 10px 5px 4px;
+  border-radius: 22px;
+  transition: background var(--ease);
+  user-select: none;
 }
-
-.user-info:hover {
-  background-color: rgba(0, 102, 204, 0.1);
+.user-trigger:hover { background: var(--clr-primary-bg); }
+.user-avatar {
+  background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-accent) 100%) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0;
 }
-
-.user-info span {
-  margin-left: 12px;
-  color: var(--text-primary);
+.user-name {
+  font-size: 13px;
   font-weight: 500;
+  color: var(--clr-text-primary);
 }
+.user-arrow { color: var(--clr-text-muted); }
 
-.content {
+/* ── Content ──────────────────────────────────────────────────── */
+.app-content {
   flex: 1;
-  padding: 24px;
   overflow-y: auto;
+  padding: 22px 24px;
+  min-height: 0;
+  background: var(--clr-page-bg);
 }
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 </style>

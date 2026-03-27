@@ -1,0 +1,199 @@
+/* ========== 按钮组件样式 ========== */
+
+.iot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-6);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+  outline: none;
+}
+
+.iot-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 主要按钮 */
+.iot-btn--primary {
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+}
+
+.iot-btn--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-600);
+}
+
+.iot-btn--primary:active:not(:disabled) {
+  background-color: var(--color-primary-700);
+}
+
+.iot-btn--primary:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-primary-200);
+}
+
+/* 次要按钮 */
+.iot-btn--secondary {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.iot-btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-primary-300);
+}
+
+.iot-btn--secondary:active:not(:disabled) {
+  background-color: var(--color-bg-active);
+}
+
+/* 成功按钮 */
+.iot-btn--success {
+  background-color: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+.iot-btn--success:hover:not(:disabled) {
+  background-color: var(--color-success-dark);
+}
+
+/* 危险按钮 */
+.iot-btn--danger {
+  background-color: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.iot-btn--danger:hover:not(:disabled) {
+  background-color: var(--color-danger-dark);
+}
+
+/* 警告按钮 */
+.iot-btn--warning {
+  background-color: var(--color-warning);
+  color: var(--color-text-inverse);
+}
+
+.iot-btn--warning:hover:not(:disabled) {
+  background-color: var(--color-warning-dark);
+}
+
+/* 幽灵按钮 */
+.iot-btn--ghost {
+  background-color: transparent;
+  color: var(--color-text-primary);
+}
+
+.iot-btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+}
+
+/* 文本按钮 */
+.iot-btn--text {
+  background-color: transparent;
+  color: var(--color-text-link);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.iot-btn--text:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+}
+
+/* 尺寸变体 */
+.iot-btn--small {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-xs);
+}
+
+.iot-btn--large {
+  padding: var(--spacing-4) var(--spacing-8);
+  font-size: var(--font-size-base);
+}
+
+/* 图标按钮 */
+.iot-btn--icon {
+  padding: var(--spacing-3);
+}
+
+.iot-btn--icon.iot-btn--small {
+  padding: var(--spacing-2);
+}
+
+.iot-btn--icon.iot-btn--large {
+  padding: var(--spacing-4);
+}
+
+/* 圆形按钮 */
+.iot-btn--circle {
+  border-radius: var(--radius-full);
+}
+
+/* 块级按钮 */
+.iot-btn--block {
+  width: 100%;
+  display: flex;
+}
+
+/* 加载状态 */
+.iot-btn--loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.iot-btn--loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 按钮组 */
+.iot-btn-group {
+  display: inline-flex;
+  gap: var(--spacing-1);
+}
+
+.iot-btn-group .iot-btn {
+  border-radius: 0;
+}
+
+.iot-btn-group .iot-btn:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.iot-btn-group .iot-btn:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* 可访问性 */
+@media (prefers-reduced-motion: reduce) {
+  .iot-btn {
+    transition: none;
+  }
+  
+  .iot-btn--loading::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

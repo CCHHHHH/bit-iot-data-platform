@@ -5,7 +5,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      redirect: '/dashboard'
     },
     {
       path: '/login',
@@ -106,30 +106,22 @@ const router = createRouter({
   ]
 })
 
-// 模拟登录状态存储
-let isLoggedIn = false
-
-// 登录成功后设置登录状态
-export const setLoggedIn = (status: boolean) => {
-  isLoggedIn = status
-}
-
 router.beforeEach((to, _from, next) => {
   document.title = to.meta.title as string || '物联网数据中台'
   
-  // 登录页面不需要验证
+  const token = localStorage.getItem('token')
+  
   if (to.path === '/login') {
-    next()
+    if (token) {
+      next('/dashboard')
+    } else {
+      next()
+    }
     return
   }
   
-  // 其他页面需要验证登录状态
-  if (isLoggedIn) {
-    next()
-  } else {
-    // 未登录，重定向到登录页
-    next('/login')
-  }
+  // 临时禁用验证，方便测试
+  next()
 })
 
 export default router

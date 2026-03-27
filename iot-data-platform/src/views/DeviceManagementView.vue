@@ -10,7 +10,8 @@ import DeviceEventDialog from '../components/DeviceEventDialog.vue'
 
 const router = useRouter()
 const loading = ref(true)
-const searchQuery = ref('')
+const deviceSearchQuery = ref('')
+const catalogueSearchQuery = ref('')
 const statusFilter = ref('all')
 const treeLoading = ref(false)
 
@@ -117,8 +118,10 @@ const loadDevicesByCatalogId = async (catalogId: string) => {
     let deviceList = []
     
     if (catalogId) {
-      // 加载指定目录下的设备
-      const response = await getDevicesByCatalogueId(catalogId)
+      // 加载指定目录下的设备，支持按设备名称搜索
+      const response = await getDevicesByCatalogueId(catalogId, {
+        deviceName: deviceSearchQuery.value || undefined
+      })
       
       if (response.data && response.data.data) {
         deviceList = response.data.data || []
@@ -128,7 +131,8 @@ const loadDevicesByCatalogId = async (catalogId: string) => {
       // 加载所有设备（使用真实 API）
       const response = await getDeviceList({
         current: pagination.value.currentPage,
-        size: pagination.value.pageSize
+        size: pagination.value.pageSize,
+        deviceName: deviceSearchQuery.value || undefined
       })
       
       if (response.data && response.data.data) {
@@ -226,11 +230,18 @@ const addDevice = () => {
 
 // 搜索设备
 const searchDevices = async () => {
-  console.log('搜索设备:', searchQuery.value)
+  console.log('搜索设备:', deviceSearchQuery.value)
   // 重置分页
   pagination.value.currentPage = 1
   // 重新加载设备
   await loadDevicesByCatalogId(currentSelectedCatalogId.value)
+}
+
+// 搜索目录
+const searchCatalogues = async () => {
+  console.log('搜索目录:', catalogueSearchQuery.value)
+  // 这里可以添加搜索目录的逻辑
+  await fetchCatalogTree()
 }
 
 // 筛选设备
@@ -255,10 +266,6 @@ const statusOptions = [
   <div class="device-management-view">
     <div class="page-header">
       <h1 class="page-title">设备管理</h1>
-      <el-button type="primary" class="add-device-btn" @click="addDevice">
-        <el-icon><Plus /></el-icon>
-        添加设备
-      </el-button>
     </div>
 
     <div class="main-container">
@@ -273,12 +280,12 @@ const statusOptions = [
         
         <div class="tree-search">
           <el-input
-            v-model="searchQuery"
+            v-model="catalogueSearchQuery"
             placeholder="搜索目录"
             prefix-icon="Search"
             clearable
             size="small"
-            @keydown.enter="searchDevices"
+            @keydown.enter="searchCatalogues"
           />
         </div>
         
@@ -314,28 +321,22 @@ const statusOptions = [
 
       <!-- 右侧设备列表 -->
       <div class="content-area">
-        <!-- 搜索和筛选 -->
-        <div class="search-filter-bar">
-          <div class="search-box">
+        <!-- 设备列表 -->
+        <div class="list-panel" v-loading="loading">
+          <div class="list-toolbar">
             <el-input
-              v-model="searchQuery"
+              v-model="deviceSearchQuery"
               placeholder="搜索设备名称、型号或 IP"
               prefix-icon="Search"
               clearable
+              style="width: 280px;"
               @keydown.enter="searchDevices"
-            >
-              <template #append>
-                <el-button @click="searchDevices">
-                  <el-icon><Search /></el-icon>
-                </el-button>
-              </template>
-            </el-input>
-          </div>
-          <div class="filter-box">
+            />
             <el-select
               v-model="statusFilter"
-              placeholder="筛选状态"
+              placeholder="全部状态"
               clearable
+              style="width: 120px;"
               @change="filterDevices"
             >
               <el-option
@@ -345,36 +346,38 @@ const statusOptions = [
                 :value="option.value"
               />
             </el-select>
+            <div class="current-catalog-info" v-if="currentSelectedCatalogId">
+              <el-tag type="info" size="small">
+                当前目录：{{ currentSelectedCatalogName }}
+              </el-tag>
+              <el-button
+                type="text"
+                size="small"
+                @click="loadDevicesByCatalogId('')"
+              >
+                清除选择
+              </el-button>
+            </div>
+            <div class="toolbar-right">
+              <el-button @click="searchDevices">搜索</el-button>
+              <el-button type="primary" @click="addDevice">
+                <el-icon><Plus /></el-icon>添加设备
+              </el-button>
+            </div>
           </div>
-          <div class="current-catalog-info" v-if="currentSelectedCatalogId">
-            <el-tag type="info" size="small">
-              当前目录：{{ currentSelectedCatalogName }}
-            </el-tag>
-            <el-button 
-              type="text" 
-              size="small" 
-              @click="loadDevicesByCatalogId('')"
-            >
-              清除选择
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 设备列表 -->
-        <div class="device-list card" v-loading="loading">
           <el-table
             :data="devices"
             style="width: 100%"
             size="small"
             :row-style="{ height: '48px' }"
           >
-            <el-table-column prop="id" label="设备 ID" width="120" />
-            <el-table-column prop="deviceName" label="设备名称" min-width="150" />
-            <el-table-column prop="deviceCode" label="设备编码" width="120" />
-            <el-table-column prop="deviceType" label="设备类型" width="120" />
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="id" label="设备 ID" width="120" show-overflow-tooltip />
+            <el-table-column prop="deviceName" label="设备名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="deviceCode" label="设备编码" width="120" show-overflow-tooltip />
+            <el-table-column prop="deviceType" label="设备类型" width="120" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" width="100" show-overflow-tooltip>
               <template #default="{ row }">
-                <el-tag 
+                <el-tag
                   :type="row.status === 'online' ? 'success' : row.status === 'offline' ? 'info' : 'warning'"
                   size="small"
                 >
@@ -382,8 +385,8 @@ const statusOptions = [
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="createTime" label="创建时间" width="160" />
-            <el-table-column label="操作" fixed="right" width="280">
+            <el-table-column prop="createTime" label="创建时间" width="160" show-overflow-tooltip />
+            <el-table-column label="操作" fixed="right" width="280" class-name="table-action-column">
               <template #default="{ row }">
                 <el-button
                   type="primary"
@@ -424,9 +427,8 @@ const statusOptions = [
               </template>
             </el-table-column>
           </el-table>
-          
-          <!-- 分页组件 -->
-          <div class="pagination-container">
+
+          <div class="list-footer">
             <el-pagination
               v-model:current-page="pagination.currentPage"
               v-model:page-size="pagination.pageSize"
@@ -462,12 +464,17 @@ const statusOptions = [
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
   flex-shrink: 0;
 }
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
+
 
 .main-container {
   display: grid;
@@ -513,7 +520,9 @@ const statusOptions = [
 
 :deep(.el-tree-node__content) {
   height: auto;
-  padding: 6px 8px;
+  padding-top: 6px;
+  padding-right: 8px;
+  padding-bottom: 6px;
   border-radius: 4px;
   margin-bottom: 4px;
 }
@@ -550,45 +559,14 @@ const statusOptions = [
 .content-area {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-}
-
-.search-filter-bar {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 300px;
-}
-
-.filter-box {
-  min-width: 150px;
+  overflow: auto;
+  min-height: 0;
 }
 
 .current-catalog-info {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.device-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-:deep(.el-table) {
-  flex: 1;
-}
-
-:deep(.el-table__body-wrapper) {
-  overflow-y: auto;
 }
 
 .device-status {
@@ -621,37 +599,17 @@ const statusOptions = [
   margin-right: 8px;
 }
 
-.pagination-container {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
 @media (max-width: 768px) {
   .device-management-view {
     height: auto;
   }
-  
+
   .main-container {
     grid-template-columns: 1fr;
   }
-  
+
   .sidebar {
     max-height: 300px;
-  }
-  
-  .search-filter-bar {
-    flex-direction: column;
-  }
-
-  .search-box,
-  .filter-box {
-    width: 100%;
-  }
-
-  .pagination-container {
-    justify-content: center;
   }
 }
 </style>

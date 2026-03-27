@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus'
 
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:9000', // 网关地址
+  baseURL: 'http://127.0.0.1:9000', // 网关地址
   timeout: 30000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'
@@ -24,11 +24,9 @@ request.interceptors.request.use(
       // config.headers['X-Access-Token'] = token
     }
     
-    console.log('发送请求:', config.method?.toUpperCase(), config.url, config.params || config.data)
     return config
   },
   (error) => {
-    console.error('请求错误:', error)
     return Promise.reject(error)
   }
 )
@@ -36,8 +34,6 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
-    console.log('响应成功:', response.config.url, response.data)
-    
     // 检查响应状态码
     if (response.data && response.data.code === 401) {
       // token 过期或无效，跳转到登录页
@@ -50,7 +46,6 @@ request.interceptors.response.use(
     return response
   },
   (error) => {
-    console.error('响应错误:', error)
     
     if (error.response) {
       // 根据状态码处理错误

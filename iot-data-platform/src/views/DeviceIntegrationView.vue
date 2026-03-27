@@ -1,249 +1,101 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Plus, Edit, Delete, RefreshRight, Upload, VideoPlay, VideoPause, Search } from '@element-plus/icons-vue'
+import { ref, onMounted, computed } from 'vue'
+import { Plus, Edit, Delete, RefreshRight, Upload, VideoPlay, VideoPause, Search, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import DataMappingView from '../components/DataMappingView.vue'
+import IntegrationStepWizard from '../components/IntegrationStepWizard.vue'
+import JsonMappingView from '../components/JsonMappingView.vue'
+import * as deviceIntegrationApi from '../api/device-integration'
 
-// Tab切换状态
+// Tab 切换状态
 const activeTab = ref('plugins')
 
-// 模拟插件数据
-const mockPlugins = [
-  {
-    id: 'plugin-001',
-    name: 'MQTT插件',
-    version: '1.0.0',
-    description: 'MQTT协议设备接入插件',
-    fileSize: '2.5MB',
-    status: 'active',
-    createdAt: '2026-02-01 10:00:00',
-    updatedAt: '2026-02-01 10:00:00'
-  },
-  {
-    id: 'plugin-002',
-    name: 'REST API插件',
-    version: '1.2.0',
-    description: 'RESTful API设备接入插件',
-    fileSize: '1.8MB',
-    status: 'active',
-    createdAt: '2026-02-01 10:30:00',
-    updatedAt: '2026-02-01 10:30:00'
-  },
-  {
-    id: 'plugin-003',
-    name: 'WebSocket插件',
-    version: '0.9.0',
-    description: 'WebSocket设备接入插件',
-    fileSize: '3.2MB',
-    status: 'inactive',
-    createdAt: '2026-02-01 11:00:00',
-    updatedAt: '2026-02-01 11:00:00'
-  }
-]
+// 插件数据
+const plugins = ref<any[]>([])
+const pluginLoading = ref(false)
+const pluginSearchQuery = ref('')
 
-// 模拟集成数据
-const mockIntegrations = [
-  {
-    id: 'int-001',
-    name: 'MQTT Broker',
-    pluginId: 'plugin-001',
-    pluginName: 'MQTT插件',
-    type: 'mqtt',
-    description: 'MQTT消息代理',
-    endpoint: 'mqtt://broker.example.com:1883',
-    status: 'connected',
-    config: {
-      host: 'broker.example.com',
-      port: 1883,
-      username: 'admin',
-      password: '******'
-    },
-    createdAt: '2026-02-01 10:00:00',
-    updatedAt: '2026-02-01 10:00:00'
-  },
-  {
-    id: 'int-002',
-    name: 'REST API',
-    pluginId: 'plugin-002',
-    pluginName: 'REST API插件',
-    type: 'rest',
-    description: 'RESTful API集成',
-    endpoint: 'https://api.example.com/v1',
-    status: 'connected',
-    config: {
-      url: 'https://api.example.com/v1',
-      apiKey: '******',
-      timeout: 30000
-    },
-    createdAt: '2026-02-01 10:30:00',
-    updatedAt: '2026-02-01 10:30:00'
-  },
-  {
-    id: 'int-003',
-    name: 'WebSocket',
-    pluginId: 'plugin-003',
-    pluginName: 'WebSocket插件',
-    type: 'websocket',
-    description: 'WebSocket连接',
-    endpoint: 'ws://socket.example.com:8080',
-    status: 'disconnected',
-    config: {
-      url: 'ws://socket.example.com:8080',
-      reconnect: true,
-      interval: 5000
-    },
-    createdAt: '2026-02-01 11:00:00',
-    updatedAt: '2026-02-01 11:00:00'
-  }
-]
-
-const plugins = ref(mockPlugins)
-const integrations = ref(mockIntegrations)
-const loading = ref({
-  plugins: true,
-  integrations: true
-})
-const searchQuery = ref({
-  plugins: '',
-  integrations: ''
-})
+// 集成数据
+const integrations = ref<any[]>([])
+const integrationLoading = ref(false)
+const integrationSearchQuery = ref('')
 
 // 分页状态
 const pluginPagination = ref({
   currentPage: 1,
   pageSize: 10,
-  total: mockPlugins.length
+  total: 0
 })
 
 const integrationPagination = ref({
   currentPage: 1,
   pageSize: 10,
-  total: mockIntegrations.length
+  total: 0
 })
 
-onMounted(() => {
-  // 模拟加载
-  setTimeout(() => {
-    loading.value.plugins = false
-    loading.value.integrations = false
-  }, 1000)
-})
-
-// 插件管理功能
-const uploadPlugin = () => {
-  // 上传插件逻辑
-  console.log('上传插件')
-  ElMessage.info('上传插件功能开发中')
-}
-
-const updatePlugin = (id: string) => {
-  // 更新插件逻辑
-  console.log('更新插件:', id)
-  ElMessage.info(`更新插件: ${id}`)
-}
-
-const deletePlugin = (id: string) => {
-  // 删除插件逻辑
-  console.log('删除插件:', id)
-  ElMessageBox.confirm('确定要删除该插件吗？', {
-    title: '删除确认',
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'error'
-  }).then(() => {
-    // 执行删除操作
-    const index = plugins.value.findIndex(plugin => plugin.id === id)
-    if (index !== -1) {
-      plugins.value.splice(index, 1)
-    }
-    ElMessage.success('删除成功')
-  }).catch(() => {
-    // 取消删除
-    ElMessage.info('已取消删除')
-  })
-}
-
-const togglePluginStatus = (id: string) => {
-  // 切换插件状态逻辑
-  console.log('切换插件状态:', id)
-  const plugin = plugins.value.find(p => p.id === id)
-  if (plugin) {
-    plugin.status = plugin.status === 'active' ? 'inactive' : 'active'
-    ElMessage.success(`插件已${plugin.status === 'active' ? '启用' : '禁用'}`)
-  }
-}
-
-// 集成管理功能
-const addIntegration = () => {
-  // 添加集成逻辑
-  console.log('添加集成')
-  ElMessage.info('添加集成功能开发中')
-}
-
-const editIntegration = (id: string) => {
-  // 编辑集成逻辑
-  console.log('编辑集成:', id)
-  ElMessage.info(`编辑集成: ${id}`)
-}
-
-const deleteIntegration = (id: string) => {
-  // 删除集成逻辑
-  console.log('删除集成:', id)
-  ElMessageBox.confirm('确定要删除该集成吗？', {
-    title: '删除确认',
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'error'
-  }).then(() => {
-    // 执行删除操作
-    const index = integrations.value.findIndex(integration => integration.id === id)
-    if (index !== -1) {
-      integrations.value.splice(index, 1)
-    }
-    ElMessage.success('删除成功')
-  }).catch(() => {
-    // 取消删除
-    ElMessage.info('已取消删除')
-  })
-}
-
-const testConnection = (id: string) => {
-  // 测试连接逻辑
-  console.log('测试连接:', id)
-  const integration = integrations.value.find(int => int.id === id)
-  if (integration) {
-    // 模拟连接测试
-    const loading = ElMessage({
-      message: '正在测试连接...',
-      duration: 0,
-      showClose: false
+// 加载插件列表
+const loadPlugins = async () => {
+  try {
+    pluginLoading.value = true
+    const response = await deviceIntegrationApi.getPluginList({
+      current: pluginPagination.value.currentPage,
+      size: pluginPagination.value.pageSize,
+      pluginName: pluginSearchQuery.value
     })
-    setTimeout(() => {
-      // 随机模拟连接结果
-      const isConnected = Math.random() > 0.3
-      integration.status = isConnected ? 'connected' : 'disconnected'
-      loading.close()
-      ElMessage.success(`连接测试${isConnected ? '成功' : '失败'}`)
-    }, 1500)
+    
+    console.log('插件列表响应:', response)
+    
+    if (response.data && response.data.code === 200) {
+      const data = response.data.data
+      if (Array.isArray(data)) {
+        plugins.value = data
+        pluginPagination.value.total = data.length
+      } else if (data && Array.isArray(data.records)) {
+        plugins.value = data.records
+        pluginPagination.value.total = data.total || data.records.length
+      }
+      console.log('插件数据:', plugins.value)
+    } else {
+      ElMessage.error(response.data?.message || '获取插件列表失败')
+    }
+  } catch (error) {
+    console.error('加载插件列表失败:', error)
+    ElMessage.error('加载插件列表失败')
+  } finally {
+    pluginLoading.value = false
   }
 }
 
-const startIntegration = (id: string) => {
-  // 启动集成逻辑
-  console.log('启动集成:', id)
-  const integration = integrations.value.find(int => int.id === id)
-  if (integration) {
-    integration.status = 'connected'
-    ElMessage.success('集成已启动')
-  }
-}
-
-const stopIntegration = (id: string) => {
-  // 停止集成逻辑
-  console.log('停止集成:', id)
-  const integration = integrations.value.find(int => int.id === id)
-  if (integration) {
-    integration.status = 'disconnected'
-    ElMessage.success('集成已停止')
+// 加载集成列表
+const loadIntegrations = async () => {
+  try {
+    integrationLoading.value = true
+    const response = await deviceIntegrationApi.getIntegrationList({
+      current: integrationPagination.value.currentPage,
+      size: integrationPagination.value.pageSize,
+      integrationName: integrationSearchQuery.value
+    })
+    
+    console.log('集成列表响应:', response)
+    
+    if (response.data && response.data.code === 200) {
+      const data = response.data.data
+      if (Array.isArray(data)) {
+        integrations.value = data
+        integrationPagination.value.total = data.length
+      } else if (data && Array.isArray(data.records)) {
+        integrations.value = data.records
+        integrationPagination.value.total = data.total || data.records.length
+      }
+      console.log('集成数据:', integrations.value)
+    } else {
+      ElMessage.error(response.data?.message || '获取集成列表失败')
+    }
+  } catch (error) {
+    console.error('加载集成列表失败:', error)
+    ElMessage.error('加载集成列表失败')
+  } finally {
+    integrationLoading.value = false
   }
 }
 
@@ -251,618 +103,742 @@ const stopIntegration = (id: string) => {
 const handlePluginSizeChange = (size: number) => {
   pluginPagination.value.pageSize = size
   pluginPagination.value.currentPage = 1
+  loadPlugins()
 }
 
 const handlePluginCurrentChange = (current: number) => {
   pluginPagination.value.currentPage = current
+  loadPlugins()
 }
 
 const handleIntegrationSizeChange = (size: number) => {
   integrationPagination.value.pageSize = size
   integrationPagination.value.currentPage = 1
+  loadIntegrations()
 }
 
 const handleIntegrationCurrentChange = (current: number) => {
   integrationPagination.value.currentPage = current
+  loadIntegrations()
 }
 
-// 计算分页后的数据
-const getPaginatedPlugins = () => {
-  const { currentPage, pageSize } = pluginPagination.value
-  const start = (currentPage - 1) * pageSize
-  const end = start + pageSize
-  return plugins.value.slice(start, end)
-}
-
-const getPaginatedIntegrations = () => {
-  const { currentPage, pageSize } = integrationPagination.value
-  const start = (currentPage - 1) * pageSize
-  const end = start + pageSize
-  return integrations.value.slice(start, end)
-}
-
-// 状态样式
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'connected':
-    case 'active':
-      return 'status-active'
-    case 'disconnected':
-    case 'inactive':
-      return 'status-inactive'
-    default:
-      return 'status-unknown'
-  }
-}
-
-// 状态文本
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'connected':
-    case 'active':
-      return '已启用'
-    case 'disconnected':
-    case 'inactive':
-      return '已禁用'
-    default:
-      return '未知'
-  }
-}
-
-// 搜索插件
+// 搜索方法
 const searchPlugins = () => {
-  // 搜索插件逻辑
-  console.log('搜索插件:', searchQuery.value)
-  // 这里可以添加实际的搜索逻辑
+  pluginPagination.value.currentPage = 1
+  loadPlugins()
 }
 
-// 搜索集成
 const searchIntegrations = () => {
-  // 搜索集成逻辑
-  console.log('搜索集成:', searchQuery.value)
-  // 这里可以添加实际的搜索逻辑
+  integrationPagination.value.currentPage = 1
+  loadIntegrations()
 }
+
+onMounted(async () => {
+  await loadPlugins()
+  await loadIntegrations()
+})
+
+// ========== 插件管理功能 ==========
+
+// 上传插件对话框
+const uploadDialogVisible = ref(false)
+const uploadFileRef = ref()
+const uploadForm = ref({ pluginName: '', pluginType: '', description: '' })
+const uploadLoading = ref(false)
+const uploadFile = ref<File | null>(null)
+
+// 打开上传对话框
+const openUploadDialog = () => {
+  uploadForm.value = { pluginName: '', pluginType: '', description: '' }
+  uploadFile.value = null
+  uploadDialogVisible.value = true
+}
+
+// 处理文件选择（el-upload on-change 回调参数是 UploadFile，需取 .raw 获得原始 File 对象）
+const handleFileChange = (file: any) => {
+  uploadFile.value = file.raw ?? file
+}
+
+// 上传插件
+const handleUploadPlugin = async () => {
+  try {
+    if (!uploadFile.value) {
+      ElMessage.warning('请选择要上传的插件文件')
+      return
+    }
+
+    uploadLoading.value = true
+
+    const response = await deviceIntegrationApi.uploadPlugin(uploadFile.value, {
+      pluginName: uploadForm.value.pluginName || undefined,
+      pluginType: uploadForm.value.pluginType || undefined,
+      description: uploadForm.value.description || undefined
+    })
+
+    if (response.data && response.data.code === 200) {
+      ElMessage.success('插件上传成功')
+      uploadDialogVisible.value = false
+      await loadPlugins()
+    } else {
+      ElMessage.error(response.data?.message || '插件上传失败')
+    }
+  } catch (error) {
+    console.error('上传插件失败:', error)
+    ElMessage.error('上传插件失败')
+  } finally {
+    uploadLoading.value = false
+  }
+}
+
+// 编辑插件对话框
+const editPluginDialogVisible = ref(false)
+const editPluginFormRef = ref()
+const editPluginForm = ref({
+  id: '',
+  pluginName: '',
+  pluginVersion: '',
+  pluginDescription: '',
+  pluginType: ''
+})
+const editPluginLoading = ref(false)
+
+// 打开编辑插件对话框
+const openEditPluginDialog = (row: any) => {
+  editPluginForm.value = {
+    id: row.id || '',
+    pluginName: row.pluginName || '',
+    pluginVersion: row.pluginVersion || '',
+    pluginDescription: row.pluginDescription || '',
+    pluginType: row.pluginType || ''
+  }
+  editPluginDialogVisible.value = true
+}
+
+// 保存编辑插件
+const handleEditPlugin = async () => {
+  try {
+    editPluginLoading.value = true
+
+    const response = await deviceIntegrationApi.updatePlugin(editPluginForm.value)
+
+    if (response.data && response.data.code === 200) {
+      ElMessage.success('插件更新成功')
+      editPluginDialogVisible.value = false
+      await loadPlugins()
+    } else {
+      ElMessage.error(response.data?.message || '插件更新失败')
+    }
+  } catch (error) {
+    console.error('更新插件失败:', error)
+    ElMessage.error('更新插件失败')
+  } finally {
+    editPluginLoading.value = false
+  }
+}
+
+// 启用/禁用插件（pluginStatus: 1=启用, 0=禁用）
+const togglePluginStatus = async (row: any) => {
+  try {
+    const isEnabled = row.pluginStatus === 1
+    const action = isEnabled ? '禁用' : '启用'
+
+    await ElMessageBox.confirm(`确定要${action}该插件吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const apiFunc = isEnabled
+      ? deviceIntegrationApi.disablePlugin
+      : deviceIntegrationApi.enablePlugin
+
+    const response = await apiFunc(row.id)
+
+    if (response.data && response.data.code === 200) {
+      ElMessage.success(`${action}成功`)
+      await loadPlugins()
+    } else {
+      ElMessage.error(response.data?.message || `${action}失败`)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('切换插件状态失败:', error)
+      ElMessage.error('切换插件状态失败')
+    }
+  }
+}
+
+// 删除插件
+const deletePlugin = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该插件吗？', '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'error'
+    })
+    
+    const response = await deviceIntegrationApi.deletePlugin(id)
+    
+    if (response.data && response.data.code === 200) {
+      ElMessage.success('删除成功')
+      await loadPlugins()
+    } else {
+      ElMessage.error(response.data?.message || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除插件失败:', error)
+      ElMessage.error('删除插件失败')
+    }
+  }
+}
+
+// ========== 集成管理功能 ==========
+
+// 新增集成向导对话框
+const wizardDialogVisible = ref(false)
+
+const openCreateIntegration = () => {
+  wizardDialogVisible.value = true
+}
+
+const handleWizardDone = async () => {
+  wizardDialogVisible.value = false
+  await loadIntegrations()
+}
+
+// 编辑集成（简单表单，仅修改基础信息）
+const integrationDialogVisible = ref(false)
+const integrationForm = ref({ id: '', integrationName: '', pluginId: '', integrationDesc: '' })
+
+const openEditIntegration = (row: any) => {
+  integrationForm.value = {
+    id: row.id || '',
+    integrationName: row.integrationName || '',
+    pluginId: row.pluginId || '',
+    integrationDesc: row.integrationDesc || ''
+  }
+  integrationDialogVisible.value = true
+}
+
+const handleSaveIntegration = async () => {
+  try {
+    integrationLoading.value = true
+    const response = await deviceIntegrationApi.updateIntegration(integrationForm.value)
+    if (response.data && response.data.code === 200) {
+      ElMessage.success('更新成功')
+      integrationDialogVisible.value = false
+      await loadIntegrations()
+    } else {
+      ElMessage.error(response.data?.message || '更新失败')
+    }
+  } catch (error) {
+    ElMessage.error('更新失败')
+  } finally {
+    integrationLoading.value = false
+  }
+}
+
+// 启动/停止集成（integrationStatus: 1=运行中, 0=已暂停）
+const toggleIntegrationStatus = async (row: any) => {
+  try {
+    const isRunning = row.integrationStatus === 1
+    const action = isRunning ? '暂停' : '启动'
+
+    await ElMessageBox.confirm(`确定要${action}该集成吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const apiFunc = isRunning
+      ? deviceIntegrationApi.stopIntegration
+      : deviceIntegrationApi.startIntegration
+
+    const response = await apiFunc(row.id)
+
+    if (response.data && response.data.code === 200) {
+      ElMessage.success(`${action}成功`)
+      await loadIntegrations()
+    } else {
+      ElMessage.error(response.data?.message || `${action}失败`)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('切换集成状态失败:', error)
+      ElMessage.error('切换集成状态失败')
+    }
+  }
+}
+
+// 删除集成
+const deleteIntegration = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该集成吗？', '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'error'
+    })
+    
+    const response = await deviceIntegrationApi.deleteIntegration(id)
+    
+    if (response.data && response.data.code === 200) {
+      ElMessage.success('删除成功')
+      await loadIntegrations()
+    } else {
+      ElMessage.error(response.data?.message || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除集成失败:', error)
+      ElMessage.error('删除集成失败')
+    }
+  }
+}
+
+// ========== 数据映射相关 ==========
+const mappingMode = ref<'json' | 'js'>('json')
+const mappingData = ref<any>({})
+const thirdPartyData = ref<any>({
+  data: [{
+    deviceName: '9#温湿度传感器',
+    deviceTag: 'chuanganqi_63',
+    deviceTagOriginal: '582D3484A0EA',
+    deviceType: '传感器',
+    manufacturer: '青萍',
+    runningStatus: '在线',
+    status: 'ENABLED'
+  }]
+})
+const mappingConfigs = ref<any[]>([
+  {
+    sourceKey: 'deviceName',
+    targetKey: 'display_name',
+    matchType: 'fuzzy',
+    defaultValue: '',
+    dataType: 'string',
+    transformType: 'none'
+  },
+  {
+    sourceKey: 'status',
+    targetKey: 'status',
+    matchType: 'fuzzy',
+    defaultValue: '',
+    dataType: 'string',
+    transformType: 'none'
+  },
+  {
+    sourceKey: 'deviceTagOriginal',
+    targetKey: 'third_id',
+    matchType: 'fuzzy',
+    defaultValue: '',
+    dataType: 'string',
+    transformType: 'none'
+  },
+  {
+    sourceKey: 'runningStatus',
+    targetKey: 'runningStatus',
+    matchType: 'fuzzy',
+    defaultValue: '',
+    dataType: 'string',
+    transformType: 'convert_online_status'
+  },
+  {
+    sourceKey: 'deviceTagOriginal',
+    targetKey: 'serial_number',
+    matchType: 'fuzzy',
+    defaultValue: '',
+    dataType: 'string',
+    transformType: 'none'
+  },
+  {
+    sourceKey: 'deviceTagOriginal',
+    targetKey: 'show_third_id',
+    matchType: 'fuzzy',
+    defaultValue: '',
+    dataType: 'string',
+    transformType: 'none'
+  }
+])
+const scheduleTime = ref(0)
+const scheduleUnit = ref<'second' | 'minute' | 'hour'>('second')
+const isEditing = ref(false)
 </script>
 
 <template>
   <div class="device-integration-view">
-    <div class="page-header">
-      <h1 class="page-title">设备集成</h1>
-    </div>
-
-    <!-- Tab切换 -->
-    <el-tabs v-model="activeTab" class="integration-tabs" style="margin-bottom: 24px;padding-left: 16px;padding-right: 16px;">
+    <el-tabs v-model="activeTab" type="border-card">
+      <!-- 插件管理 -->
       <el-tab-pane label="插件管理" name="plugins">
-        <div class="tab-header">
-          <div class="search-bar">
+        <div class="toolbar">
+          <div class="toolbar__left">
             <el-input
-              v-model="searchQuery.plugins"
-              placeholder="搜索插件名称或版本"
+              v-model="pluginSearchQuery"
+              placeholder="搜索插件"
+              style="width: 240px"
               clearable
-              style="width: 400px;"
-              @keydown.enter="searchPlugins"
+              @keyup.enter="searchPlugins"
             >
-              <template #append>
-                <el-button @click="searchPlugins">
-                  <el-icon><Search /></el-icon>
-                </el-button>
+              <template #prefix>
+                <el-icon><Search /></el-icon>
               </template>
             </el-input>
+            <el-button type="primary" @click="searchPlugins">搜索</el-button>
+            <el-button @click="loadPlugins">
+              <el-icon><RefreshRight /></el-icon>
+              刷新
+            </el-button>
           </div>
-          <el-button type="primary" class="upload-plugin-btn" @click="uploadPlugin">
-            <el-icon><Upload /></el-icon>
-            上传插件
-          </el-button>
+          <div class="toolbar__right">
+            <el-button type="primary" @click="openUploadDialog">
+              <el-icon><Upload /></el-icon>
+              上传插件
+            </el-button>
+          </div>
         </div>
 
-        <!-- 插件列表 -->
-        <div class="plugin-list card" v-loading="loading.plugins">
-          <el-table
-            :data="getPaginatedPlugins()"
-            style="width: 100%"
-            size="small"
-            :row-style="{ height: '48px' }"
-          >
-            <el-table-column prop="name" label="插件名称" />
-            <el-table-column prop="version" label="版本" />
-            <el-table-column prop="description" label="插件描述" />
-            <el-table-column prop="fileSize" label="文件大小" />
-            <el-table-column prop="status" label="状态">
-              <template #default="{ row }">
-                <span class="plugin-status" :class="getStatusClass(row.status)">
-                  {{ getStatusText(row.status) }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="updatedAt" label="更新时间" />
-            <el-table-column label="操作" fixed="right">
-              <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  size="small"
-                  class="toggle-btn"
-                  @click="togglePluginStatus(row.id)"
-                >
-                  <el-icon v-if="row.status === 'active'">
-                    <VideoPause />
-                  </el-icon>
-                  <el-icon v-else>
-                    <VideoPlay />
-                  </el-icon>
-                  {{ row.status === 'active' ? '禁用' : '启用' }}
-                </el-button>
-                <el-button
-                  type="warning"
-                  size="small"
-                  class="update-btn"
-                  @click="updatePlugin(row.id)"
-                >
-                  <el-icon><Upload /></el-icon>
-                  更新
-                </el-button>
-                <el-button
-                  type="danger"
-                  size="small"
-                  class="delete-btn"
-                  @click="deletePlugin(row.id)"
-                >
-                  <el-icon><Delete /></el-icon>
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <!-- 分页 -->
-          <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="pluginPagination.currentPage"
-              v-model:page-size="pluginPagination.pageSize"
-              :page-sizes="[5, 10, 20, 50]"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="pluginPagination.total"
-              prev-text="上一页"
-              next-text="下一页"
-              @size-change="handlePluginSizeChange"
-              @current-change="handlePluginCurrentChange"
-            />
-          </div>
+        <el-table
+          v-loading="pluginLoading"
+          :data="plugins"
+          style="width: 100%"
+          border
+          stripe
+        >
+          <el-table-column prop="pluginName" label="插件名称" show-overflow-tooltip />
+          <el-table-column prop="pluginVersion" label="版本" width="100" show-overflow-tooltip />
+          <el-table-column prop="pluginDescription" label="描述" show-overflow-tooltip />
+          <el-table-column prop="pluginType" label="类型" width="100" show-overflow-tooltip />
+          <el-table-column prop="pluginSize" label="文件大小" width="100" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.pluginSize ? (row.pluginSize / 1024).toFixed(1) + ' KB' : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="pluginStatus" label="状态" width="90" show-overflow-tooltip>
+            <template #default="{ row }">
+              <el-tag :type="row.pluginStatus === 1 ? 'success' : 'info'" size="small">
+                {{ row.pluginStatus === 1 ? '已启用' : '已禁用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createTime" label="创建时间" width="170" show-overflow-tooltip />
+          <el-table-column label="操作" fixed="right" class-name="table-action-column" width="280">
+            <template #default="{ row }">
+              <el-button
+                type="primary"
+                size="small"
+                @click="togglePluginStatus(row)"
+              >
+                {{ row.pluginStatus === 1 ? '禁用' : '启用' }}
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                @click="openEditPluginDialog(row)"
+              >
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                @click="deletePlugin(row.id)"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="pluginPagination.currentPage"
+            v-model:page-size="pluginPagination.pageSize"
+            :total="pluginPagination.total"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handlePluginSizeChange"
+            @current-change="handlePluginCurrentChange"
+          />
         </div>
       </el-tab-pane>
+
+      <!-- 集成管理 -->
       <el-tab-pane label="集成管理" name="integrations">
-        <div class="tab-header">
-          <div class="search-bar">
+        <div class="toolbar">
+          <div class="toolbar__left">
             <el-input
-              v-model="searchQuery.integrations"
-              placeholder="搜索集成名称或类型"
+              v-model="integrationSearchQuery"
+              placeholder="搜索集成"
+              style="width: 240px"
               clearable
-              style="width: 400px;"
-              @keydown.enter="searchIntegrations"
+              @keyup.enter="searchIntegrations"
             >
-              <template #append>
-                <el-button @click="searchIntegrations">
-                  <el-icon><Search /></el-icon>
-                </el-button>
+              <template #prefix>
+                <el-icon><Search /></el-icon>
               </template>
             </el-input>
+            <el-button type="primary" @click="searchIntegrations">搜索</el-button>
+            <el-button @click="loadIntegrations">
+              <el-icon><RefreshRight /></el-icon>
+              刷新
+            </el-button>
           </div>
-          <el-button type="primary" class="add-integration-btn" @click="addIntegration">
-            <el-icon><Plus /></el-icon>
-            添加集成
-          </el-button>
+          <div class="toolbar__right">
+            <el-button type="primary" @click="openCreateIntegration">
+              <el-icon><Plus /></el-icon>
+              新增集成
+            </el-button>
+          </div>
         </div>
 
-        <!-- 集成列表 -->
-        <div class="integration-list card" v-loading="loading.integrations">
-          <el-table
-            :data="getPaginatedIntegrations()"
-            style="width: 100%"
-            size="small"
-            :row-style="{ height: '48px' }"
-          >
-            <el-table-column prop="name" label="集成名称" />
-            <el-table-column prop="pluginName" label="绑定插件" />
-            <el-table-column prop="type" label="集成类型" />
-            <el-table-column prop="description" label="集成描述" />
-            <el-table-column prop="endpoint" label="端点地址" />
-            <el-table-column prop="status" label="状态">
-              <template #default="{ row }">
-                <span class="integration-status" :class="getStatusClass(row.status)">
-                  {{ getStatusText(row.status) }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="updatedAt" label="更新时间" />
-            <el-table-column label="操作" fixed="right">
-              <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  size="small"
-                  class="test-btn"
-                  @click="testConnection(row.id)"
-                >
-                  <el-icon><RefreshRight /></el-icon>
-                  测试连接
-                </el-button>
-                <el-button
-                  type="success"
-                  size="small"
-                  class="start-btn"
-                  v-if="row.status === 'disconnected'"
-                  @click="startIntegration(row.id)"
-                >
-                  <el-icon><VideoPlay /></el-icon>
-                  启动
-                </el-button>
-                <el-button
-                  type="warning"
-                  size="small"
-                  class="stop-btn"
-                  v-else
-                  @click="stopIntegration(row.id)"
-                >
-                  <el-icon><VideoPause /></el-icon>
-                  停止
-                </el-button>
-                <el-button
-                  type="info"
-                  size="small"
-                  class="edit-btn"
-                  @click="editIntegration(row.id)"
-                >
-                  <el-icon><Edit /></el-icon>
-                  编辑
-                </el-button>
-                <el-button
-                  type="danger"
-                  size="small"
-                  class="delete-btn"
-                  @click="deleteIntegration(row.id)"
-                >
-                  <el-icon><Delete /></el-icon>
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <!-- 分页 -->
-          <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="integrationPagination.currentPage"
-              v-model:page-size="integrationPagination.pageSize"
-              :page-sizes="[5, 10, 20, 50]"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="integrationPagination.total"
-              prev-text="上一页"
-              next-text="下一页"
-              @size-change="handleIntegrationSizeChange"
-              @current-change="handleIntegrationCurrentChange"
-            />
-          </div>
+        <el-table
+          v-loading="integrationLoading"
+          :data="integrations"
+          style="width: 100%"
+          border
+          stripe
+        >
+          <el-table-column prop="integrationName" label="集成名称" show-overflow-tooltip />
+          <el-table-column prop="pluginId" label="绑定插件" show-overflow-tooltip />
+          <el-table-column prop="integrationDesc" label="描述" show-overflow-tooltip />
+          <el-table-column prop="integrationStatus" label="状态" width="100" show-overflow-tooltip>
+            <template #default="{ row }">
+              <el-tag :type="row.integrationStatus === 1 ? 'success' : 'info'" size="small">
+                {{ row.integrationStatus === 1 ? '运行中' : '已暂停' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createTime" label="创建时间" width="170" show-overflow-tooltip />
+          <el-table-column prop="updateTime" label="更新时间" width="170" show-overflow-tooltip />
+          <el-table-column label="操作" fixed="right" class-name="table-action-column" width="320">
+            <template #default="{ row }">
+              <el-button
+                type="primary"
+                size="small"
+                @click="toggleIntegrationStatus(row)"
+              >
+                {{ row.integrationStatus === 1 ? '暂停' : '启动' }}
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                @click="openEditIntegration(row)"
+              >
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                @click="deleteIntegration(row.id)"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="integrationPagination.currentPage"
+            v-model:page-size="integrationPagination.pageSize"
+            :total="integrationPagination.total"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleIntegrationSizeChange"
+            @current-change="handleIntegrationCurrentChange"
+          />
         </div>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 上传插件对话框 -->
+    <el-dialog
+      v-model="uploadDialogVisible"
+      title="上传插件"
+      width="500px"
+    >
+      <el-form :model="uploadForm" label-width="100px">
+        <el-form-item label="插件文件" required>
+          <el-upload
+            ref="uploadFileRef"
+            drag
+            :auto-upload="false"
+            :on-change="handleFileChange"
+            :limit="1"
+            accept=".jar,.zip"
+          >
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+            <div class="el-upload__text">
+              将文件拖到此处，或<em>点击上传</em>
+            </div>
+            <template #tip>
+              <div class="el-upload__tip">只能上传 jar/zip 文件</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="插件名称">
+          <el-input v-model="uploadForm.pluginName" placeholder="默认使用文件名" clearable />
+        </el-form-item>
+        <el-form-item label="插件类型">
+          <el-input v-model="uploadForm.pluginType" placeholder="默认从文件扩展名获取" clearable />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input
+            v-model="uploadForm.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入插件描述（选填）"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="uploadDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="uploadLoading" @click="handleUploadPlugin">
+            上传
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑插件对话框 -->
+    <el-dialog
+      v-model="editPluginDialogVisible"
+      title="编辑插件"
+      width="500px"
+    >
+      <el-form ref="editPluginFormRef" :model="editPluginForm" label-width="100px">
+        <el-form-item label="插件名称" prop="pluginName">
+          <el-input v-model="editPluginForm.pluginName" placeholder="请输入插件名称" />
+        </el-form-item>
+        <el-form-item label="版本号" prop="pluginVersion">
+          <el-input v-model="editPluginForm.pluginVersion" placeholder="请输入版本号" />
+        </el-form-item>
+        <el-form-item label="插件类型" prop="pluginType">
+          <el-input v-model="editPluginForm.pluginType" placeholder="请输入插件类型" />
+        </el-form-item>
+        <el-form-item label="描述" prop="pluginDescription">
+          <el-input
+            v-model="editPluginForm.pluginDescription"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入插件描述"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editPluginDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="editPluginLoading" @click="handleEditPlugin">
+            保存
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 新增集成向导对话框 -->
+    <el-dialog
+      v-model="wizardDialogVisible"
+      title="新增集成实例"
+      width="780px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      class="wizard-dialog"
+    >
+      <IntegrationStepWizard
+        :plugins="plugins"
+        @done="handleWizardDone"
+        @cancel="wizardDialogVisible = false"
+      />
+    </el-dialog>
+
+    <!-- 编辑集成对话框 -->
+    <el-dialog
+      v-model="integrationDialogVisible"
+      title="编辑集成"
+      width="500px"
+    >
+      <el-form :model="integrationForm" label-width="100px">
+        <el-form-item label="集成名称" required>
+          <el-input v-model="integrationForm.integrationName" placeholder="请输入集成名称" />
+        </el-form-item>
+        <el-form-item label="绑定插件">
+          <el-select v-model="integrationForm.pluginId" placeholder="请选择插件" style="width: 100%">
+            <el-option
+              v-for="plugin in plugins"
+              :key="plugin.id"
+              :label="plugin.pluginName"
+              :value="plugin.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input
+            v-model="integrationForm.integrationDesc"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入集成描述"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="integrationDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="integrationLoading" @click="handleSaveIntegration">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <style scoped>
 .device-integration-view {
-  padding: 0;
+  padding: 20px;
 }
 
-.page-header {
+.toolbar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-/* Tab样式 */
-.integration-tabs {
-  background-color: var(--background-white);
-  border-radius: 10px;
-  box-shadow: var(--card-shadow);
-  padding: 0;
-  overflow: hidden;
-  margin-top: 24px;
-}
-
-.integration-tabs .el-tabs__header {
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--background-white);
-}
-
-.integration-tabs .el-tabs__nav {
-  margin: 0;
-  padding: 0 32px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-}
-
-.integration-tabs .el-tabs__item {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  padding: 0 28px;
-  height: 48px;
-  line-height: 48px;
-  margin-right: 20px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.integration-tabs .el-tabs__item:hover {
-  color: var(--primary-color);
-  background-color: rgba(0, 102, 204, 0.05);
-}
-
-.integration-tabs .el-tabs__item.is-active {
-  color: var(--primary-color);
-  font-weight: 600;
-  background-color: rgba(0, 102, 204, 0.1);
-}
-
-.integration-tabs .el-tabs__active-bar {
-  background-color: var(--primary-color);
-  height: 3px;
-  border-radius: 3px;
-  bottom: 1px;
-}
-
-.integration-tabs .el-tabs__content {
-  padding: 32px;
-}
-
-/* Tab内容样式 */
-.tab-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 16px;
-  padding: 0 0px;
+  gap: 12px;
 }
 
-.search-bar {
-  margin-bottom: 0;
+.toolbar__left,
+.toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.search-bar .el-input {
-  width: 400px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
-}
-
-.search-bar .el-input:focus-within {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
-}
-
-.upload-plugin-btn,
-.add-integration-btn {
-  border-radius: 8px;
-  font-weight: 500;
-  padding: 10px 20px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.upload-plugin-btn:hover,
-.add-integration-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
-}
-
-/* 插件管理样式 */
-.plugin-list {
-  margin-top: 16px;
-  padding: 5 16px;
-}
-
-/* 集成管理样式 */
-.integration-list {
-  margin-top: 16px;
-  padding: 5 16px;
-}
-
-/* 表格样式 */
-.el-table {
-  width: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.el-table th {
-  font-weight: 600;
-  font-size: 14px;
-  padding: 16px;
-  background-color: #f8fafc;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.el-table td {
-  padding: 16px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.el-table .cell {
-  white-space: normal;
-  word-break: break-word;
-}
-
-/* 操作列样式 */
-.el-table-column--fixed-right {
-  right: 0;
-  z-index: 10;
-}
-
-.el-table-column--fixed-right .el-table__cell {
-  background-color: var(--background-white);
-}
-
-/* 分页容器样式 */
 .pagination-container {
   display: flex;
   justify-content: flex-end;
-  margin-top: 24px;
-  padding: 0 16px;
+  margin-top: 16px;
 }
 
-/* 响应式表格 */
-@media (max-width: 1200px) {
-  .integration-tabs .el-tabs__content {
-    padding: 24px;
-  }
-  
-  .tab-header {
-    padding: 0 12px;
-    margin-bottom: 24px;
-  }
-  
-  .search-bar .el-input {
-    width: 300px;
-  }
-  
-  .plugin-list,
-  .integration-list {
-    padding: 0 12px;
-    margin-top: 24px;
-  }
-  
-  .el-table {
-    font-size: 13px;
-  }
-  
-  .el-table th,
-  .el-table td {
-    padding: 12px;
-  }
-  
-  .el-button--small {
-    padding: 4px 8px;
-    font-size: 12px;
-  }
-  
-  .el-button--small .el-icon {
-    font-size: 12px;
-  }
+.el-icon--upload {
+  font-size: 67px;
+  color: #8c939d;
+  margin: 40px 0 16px;
 }
 
-@media (max-width: 768px) {
-  .tab-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 0 16px;
-  }
-  
-  .search-bar .el-input {
-    width: 100%;
-  }
-  
-  .plugin-list,
-  .integration-list {
-    padding: 0 16px;
-  }
+:deep(.el-tabs__content) {
+  padding: 16px 20px;
 }
 
-.plugin-status {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
+/* 向导对话框去除默认 body padding */
+:deep(.wizard-dialog .el-dialog__body) {
+  padding: 0;
+  overflow: hidden;
 }
 
-.integration-status {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
+:deep(.el-table) {
+  font-size: var(--el-font-size-base);
 }
 
-/* 状态样式 */
-.status-active {
-  background-color: rgba(0, 179, 134, 0.1) !important;
-  color: var(--success-color) !important;
-}
-
-.status-inactive {
-  background-color: rgba(144, 147, 153, 0.1) !important;
-  color: #909399 !important;
-}
-
-/* 按钮样式 */
-.upload-plugin-btn,
-.add-integration-btn {
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.test-btn,
-.toggle-btn,
-.start-btn,
-.stop-btn,
-.edit-btn,
-.update-btn {
-  margin-right: 8px;
-  border-radius: 6px;
-}
-
-.delete-btn {
-  border-radius: 6px;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .tab-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .search-bar {
-    width: 100%;
-  }
-
-  .el-input {
-    width: 100% !important;
-  }
-
-  .integration-tabs .el-tabs__item {
-    padding: 0 16px;
-    margin-right: 8px;
-  }
-
-  .integration-tabs .el-tabs__content {
-    padding: 16px;
-  }
-
-  .plugin-list,
-  .integration-list {
-    margin-top: 16px;
-  }
-
-  /* 表格操作按钮响应式 */
-  .el-table-column--fixed-right {
-    width: auto !important;
-  }
-
-  .el-button--small {
-    padding: 4px 8px !important;
-    font-size: 12px !important;
-  }
-
-  .el-button--small .el-icon {
-    font-size: 12px !important;
-  }
+:deep(.el-pagination) {
+  padding: 16px 0;
 }
 </style>

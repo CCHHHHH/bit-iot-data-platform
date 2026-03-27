@@ -168,27 +168,20 @@ const searchAlerts = () => {
       </el-button>
     </div>
 
-    <!-- 搜索和筛选 -->
-    <div class="search-filter-bar">
-      <div class="search-box">
+    <!-- 告警列表面板 -->
+    <div class="list-panel" v-loading="loading">
+      <div class="list-toolbar">
         <el-input
           v-model="searchQuery"
           placeholder="搜索设备名称或告警信息"
           prefix-icon="Search"
           clearable
+          style="width: 280px;"
           @keydown.enter="searchAlerts"
-        >
-          <template #append>
-            <el-button @click="searchAlerts">
-              <el-icon><Search /></el-icon>
-            </el-button>
-          </template>
-        </el-input>
-      </div>
-      <div class="filter-box">
+        />
         <el-select
           v-model="statusFilter"
-          placeholder="筛选状态"
+          placeholder="全部状态"
           clearable
           style="width: 120px;"
         >
@@ -199,11 +192,9 @@ const searchAlerts = () => {
             :value="option.value"
           />
         </el-select>
-      </div>
-      <div class="filter-box">
         <el-select
           v-model="levelFilter"
-          placeholder="筛选级别"
+          placeholder="全部级别"
           clearable
           style="width: 120px;"
         >
@@ -214,35 +205,37 @@ const searchAlerts = () => {
             :value="option.value"
           />
         </el-select>
+        <div class="toolbar-right">
+          <el-button @click="searchAlerts">搜索</el-button>
+          <el-button @click="refreshAlerts">
+            <el-icon><Refresh /></el-icon>刷新
+          </el-button>
+        </div>
       </div>
-    </div>
-
-    <!-- 告警列表 -->
-    <div class="alert-list card" v-loading="loading">
       <el-table
         :data="paginatedAlerts"
         style="width: 100%"
         size="small"
         :row-style="{ height: '48px' }"
       >
-        <el-table-column prop="deviceName" label="设备名称" />
-        <el-table-column prop="message" label="告警信息" />
-        <el-table-column prop="level" label="告警级别">
+        <el-table-column prop="deviceName" label="设备名称" show-overflow-tooltip />
+        <el-table-column prop="message" label="告警信息" show-overflow-tooltip />
+        <el-table-column prop="level" label="告警级别" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="alert-level" :class="getAlertLevelClass(row.level)">
               {{ row.level === 'error' ? '错误' : row.level === 'warning' ? '警告' : '信息' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="timestamp" label="发生时间" />
-        <el-table-column prop="status" label="状态">
+        <el-table-column prop="timestamp" label="发生时间" show-overflow-tooltip />
+        <el-table-column prop="status" label="状态" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="alert-status" :class="getStatusClass(row.status)">
               {{ row.status === 'active' ? '活跃' : '已解决' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right">
+        <el-table-column label="操作" fixed="right" class-name="table-action-column" width="200">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'active'"
@@ -256,8 +249,7 @@ const searchAlerts = () => {
         </el-table-column>
       </el-table>
       
-      <!-- 分页组件 -->
-      <div class="pagination-container">
+      <div class="list-footer">
         <el-pagination
           v-model:current-page="pagination.currentPage"
           v-model:page-size="pagination.pageSize"
@@ -286,21 +278,6 @@ const searchAlerts = () => {
   margin-bottom: 20px;
 }
 
-.search-filter-bar {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 300px;
-}
-
-.filter-box {
-  min-width: 120px;
-}
 
 .alert-level {
   padding: 2px 8px;
@@ -341,24 +318,4 @@ const searchAlerts = () => {
   color: #67c23a;
 }
 
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-@media (max-width: 768px) {
-  .search-filter-bar {
-    flex-direction: column;
-  }
-
-  .search-box,
-  .filter-box {
-    width: 100%;
-  }
-
-  .pagination-container {
-    justify-content: center;
-  }
-}
 </style>

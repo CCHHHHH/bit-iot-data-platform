@@ -95,9 +95,10 @@ export function getDeviceList(params?: {
  * 根据设备目录 ID 查询设备列表
  * @description GET /api/device/iot/device/by-catalogue/{catalogueId}
  * @param catalogueId 目录 ID
+ * @param params 查询参数 { deviceName }
  */
-export function getDevicesByCatalogueId(catalogueId: string) {
-  return request.get(`/api/device/iot/device/by-catalogue/${catalogueId}`)
+export function getDevicesByCatalogueId(catalogueId: string, params?: { deviceName?: string }) {
+  return request.get(`/api/device/iot/device/by-catalogue/${catalogueId}`, { params })
 }
 
 /**

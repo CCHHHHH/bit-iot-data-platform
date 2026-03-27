@@ -17,6 +17,13 @@ export function getCurrentUser() {
   return request.get('/api/system/iot/login/current')
 }
 
+/**
+ * 用户登出
+ */
+export function logout() {
+  return request.post('/api/system/iot/login/logout')
+}
+
 // ========== 用户管理接口 ==========
 
 /**
@@ -32,7 +39,8 @@ export function getUserList(params?: { current?: number; size?: number; username
  * @param userId 用户 ID
  */
 export function getUserById(userId: string) {
-  return request.get(`/api/system/iot/user/${userId}`)
+  // 有些后端接口要求用 POST 方式获取详情
+  return request.post('/api/system/iot/user/info', { id: userId })
 }
 
 /**

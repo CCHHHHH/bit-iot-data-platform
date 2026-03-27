@@ -224,22 +224,21 @@ onMounted(async () => {
         style="width: 100%"
         size="small"
       >
-        <el-table-column prop="name" label="测量点名称" min-width="150" />
-        <el-table-column prop="code" label="编码" width="120" />
-        <el-table-column prop="type" label="类型" width="100">
+        <el-table-column prop="name" label="测量点名称" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="code" label="编码" width="120" show-overflow-tooltip />
+        <el-table-column prop="type" label="类型" width="100" show-overflow-tooltip>
           <template #default="{ row }">
             <el-tag size="small">{{ getPointTypeText(row.type) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="unit" label="单位" width="80" />
-        <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="currentValue" label="当前值" width="120">
+        <el-table-column prop="unit" label="单位" width="80" show-overflow-tooltip />
+        <el-table-column prop="currentValue" label="当前值" width="120" show-overflow-tooltip>
           <template #default="{ row }">
             <span>{{ row.currentValue || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="lastUpdateTime" label="最后更新" width="160" />
-        <el-table-column label="操作" fixed="right" width="200">
+        <el-table-column prop="lastUpdateTime" label="最后更新" width="160" show-overflow-tooltip />
+        <el-table-column label="操作" fixed="right" width="200" class-name="table-action-column">
           <template #default="{ row }">
             <el-button
               type="primary"

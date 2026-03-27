@@ -672,10 +672,10 @@ onMounted(() => {
           style="width: 100%"
           size="small"
         >
-          <el-table-column prop="name" label="设备名称" />
-          <el-table-column prop="sn" label="设备序列号" />
-          <el-table-column prop="model" label="型号" />
-          <el-table-column prop="status" label="状态">
+          <el-table-column prop="name" label="设备名称" show-overflow-tooltip />
+          <el-table-column prop="sn" label="设备序列号" show-overflow-tooltip />
+          <el-table-column prop="model" label="型号" show-overflow-tooltip />
+          <el-table-column prop="status" label="状态" show-overflow-tooltip>
             <template #default="{ row }">
               <el-tag 
                 :type="row.status === 'online' ? 'success' : row.status === 'offline' ? 'info' : 'danger'"
@@ -685,8 +685,8 @@ onMounted(() => {
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="createdAt" label="添加时间" />
-          <el-table-column label="操作" width="100">
+          <el-table-column prop="createdAt" label="添加时间" show-overflow-tooltip />
+          <el-table-column label="操作" width="120" class-name="table-action-column">
             <template #default="{ row }">
               <el-button
                 type="danger"
