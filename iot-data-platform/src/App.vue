@@ -7,6 +7,7 @@ import {
   User, UserFilled, Key, Expand, Fold, ArrowDown
 } from '@element-plus/icons-vue'
 import { logout } from './api/index'
+import ThemeToggle from './components/ThemeToggle.vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -191,6 +192,8 @@ const currentPageTitle = computed(() => {
             <span class="status-dot online" style="margin-right:6px;"></span>
             <span class="header-sys-text">运行正常</span>
           </div>
+
+          <ThemeToggle />
 
           <div class="header-divider"></div>
 
@@ -407,7 +410,7 @@ const currentPageTitle = computed(() => {
 
 .app-header {
   height: 56px;
-  background: #fff;
+  background: var(--color-bg-primary);
   border-bottom: 1px solid var(--clr-border-light);
   display: flex;
   align-items: center;

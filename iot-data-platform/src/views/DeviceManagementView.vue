@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Edit, Delete, View, Search, Folder, FolderOpened, Bell } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, View, Folder, FolderOpened, Bell } from '@element-plus/icons-vue'
 import { ElTree, ElMessage } from 'element-plus'
 import { getDeviceCatalogueTree } from '../api/device'
 import { getDeviceList, getDevicesByCatalogueId } from '../api/device'
@@ -471,7 +471,7 @@ const statusOptions = [
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -492,14 +492,14 @@ const statusOptions = [
 
 .sidebar-header {
   padding: 12px 16px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--color-border-light);
   flex-shrink: 0;
 }
 
 .sidebar-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -508,7 +508,7 @@ const statusOptions = [
 
 .tree-search {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-border-light);
   flex-shrink: 0;
 }
 
@@ -528,12 +528,12 @@ const statusOptions = [
 }
 
 :deep(.el-tree-node__content:hover) {
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
 }
 
 :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background-color: #ecf5ff;
-  color: #409EFF;
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-500);
 }
 
 .tree-node-content {
@@ -552,7 +552,7 @@ const statusOptions = [
 
 .tree-node-count {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   margin-left: 8px;
 }
 
@@ -582,8 +582,8 @@ const statusOptions = [
 }
 
 .status-offline {
-  background-color: #f5f7fa;
-  color: #909399;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
 }
 
 .status-warning {

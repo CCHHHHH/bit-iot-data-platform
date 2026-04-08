@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '../api'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const form = ref({
   username: '',
@@ -23,7 +24,10 @@ const loginHandle = async () => {
       if (token) localStorage.setItem('token', token)
       localStorage.setItem('userInfo', JSON.stringify(response.data.data))
       ElMessage.success('登录成功')
-      router.push('/dashboard')
+      const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
+        ? route.query.redirect
+        : '/dashboard'
+      router.push(redirect)
     } else {
       ElMessage.error(response.data?.message || '登录失败')
     }
@@ -277,7 +281,7 @@ const loginHandle = async () => {
 .login-form-panel {
   width: 440px;
   min-width: 400px;
-  background: #fff;
+  background: var(--color-bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;

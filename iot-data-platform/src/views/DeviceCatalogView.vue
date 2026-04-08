@@ -850,7 +850,7 @@ onMounted(() => {
 /* 右键菜单 */
 .context-menu {
   position: fixed;
-  background: #fff;
+  background: var(--color-bg-primary);
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);

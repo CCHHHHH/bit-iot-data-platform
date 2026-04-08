@@ -821,7 +821,7 @@ const searchAlerts = () => {
 }
 
 .metric-card {
-  background: #fff;
+  background: var(--color-bg-primary);
   border-radius: 14px;
   padding: 20px;
   display: flex;

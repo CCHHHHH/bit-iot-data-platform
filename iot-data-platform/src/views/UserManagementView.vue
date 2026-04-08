@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Plus, Edit, Delete, Search } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { useRoleStore } from '../stores/role'
-import { ElMessage, ElMessageBox, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElCol, ElRow, ElRadio, ElRadioGroup, FormInstance } from 'element-plus'
+import { ElMessage, ElMessageBox, ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElCol, ElRow, ElRadioGroup } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import * as userApi from '../api'
 
 const loading = ref(true)
@@ -112,8 +113,19 @@ const dialogTitle = ref('')
 const isEdit = ref(false)
 const currentUserId = ref('')
 
+interface UserForm {
+  username: string
+  name: string
+  email: string
+  phone: string
+  roleId: string
+  status: 'active' | 'inactive'
+  password: string
+  confirmPassword: string
+}
+
 // 表单状态
-const userForm = ref({
+const userForm = ref<UserForm>({
   username: '',
   name: '',
   email: '',
@@ -125,7 +137,7 @@ const userForm = ref({
 })
 
 // 表单验证规则
-const rules = {
+const rules: FormRules<UserForm> = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 2, max: 20, message: '用户名长度在 2-20 个字符', trigger: 'blur' }
@@ -155,7 +167,7 @@ const rules = {
   confirmPassword: [
     { required: false, message: '请确认密码', trigger: 'blur' },
     {
-      validator: (rule: any, value: string, callback: any) => {
+      validator: (_rule, value, callback) => {
         if (value !== userForm.value.password) {
           callback(new Error('两次输入的密码不一致'))
         } else {
@@ -174,12 +186,6 @@ const roleOptions = computed(() => {
     label: role.name
   }))
 })
-
-// 状态选项
-const statusOptions = [
-  { value: 'active', label: '活跃' },
-  { value: 'inactive', label: '禁用' }
-]
 
 // 重置表单
 const resetForm = () => {

@@ -88,6 +88,14 @@ const router = createRouter({
       }
     },
     {
+      path: '/rules/:id',
+      name: 'RuleDetail',
+      component: () => import('../views/RuleDetailView.vue'),
+      meta: {
+        title: '规则详情'
+      }
+    },
+    {
       path: '/integrations',
       name: 'Integrations',
       component: () => import('../views/DeviceIntegrationView.vue'),
@@ -108,19 +116,30 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   document.title = to.meta.title as string || '物联网数据中台'
-  
+
   const token = localStorage.getItem('token')
-  
-  if (to.path === '/login') {
+  const isLoginRoute = to.path === '/login'
+  const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/dashboard'
+
+  if (isLoginRoute) {
     if (token) {
-      next('/dashboard')
+      next(redirect)
     } else {
       next()
     }
     return
   }
-  
-  // 临时禁用验证，方便测试
+
+  if (!token) {
+    next({
+      path: '/login',
+      query: {
+        redirect: to.fullPath
+      }
+    })
+    return
+  }
+
   next()
 })
 

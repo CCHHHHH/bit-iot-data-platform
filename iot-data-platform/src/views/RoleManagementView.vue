@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Plus, Edit, Delete, Search } from '@element-plus/icons-vue'
+import { ref, computed, onMounted } from 'vue'
+import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRoleList, addRole as apiAddRole, deleteRole as apiDeleteRole, getPermissionList, getRolePermissions, bindRolePermissions as bindRolePermissionsApi } from '../api'
 
@@ -34,6 +34,16 @@ const currentRoleName = ref('')
 const currentPermissionIds = ref<string[]>([])
 const allPermissions = ref<any[]>([])
 const bindPermissionFormRef = ref()
+
+const isAllSelected = computed(() =>
+  allPermissions.value.length > 0 && currentPermissionIds.value.length === allPermissions.value.length
+)
+const isIndeterminate = computed(() =>
+  currentPermissionIds.value.length > 0 && currentPermissionIds.value.length < allPermissions.value.length
+)
+const toggleSelectAll = (checked: boolean) => {
+  currentPermissionIds.value = checked ? allPermissions.value.map((p: any) => p.id) : []
+}
 
 // 获取角色数据
 const fetchRoles = async () => {
@@ -209,12 +219,7 @@ const submitBindPermissions = async () => {
     await bindRolePermissionsApi(currentRoleId.value, validPermissionIds)
     ElMessage.success('权限绑定成功')
     bindPermissionDialogVisible.value = false
-    
-    // 重新加载权限列表以便下次打开时显示最新状态
-    const permsResponse = await getRolePermissions(currentRoleId.value)
-    if (permsResponse.data && permsResponse.data.data) {
-      currentPermissionIds.value = permsResponse.data.data.map((p: any) => p.id)
-    }
+    await fetchRoles()
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '绑定权限失败')
   } finally {
@@ -416,19 +421,28 @@ const getPermissionTagType = (permissionType: string) => {
         label-position="left"
       >
         <el-form-item label="选择权限">
-          <el-checkbox-group v-model="currentPermissionIds">
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-              <el-checkbox
-                v-for="permission in allPermissions"
-                :key="permission.id"
-                :label="permission.permissionName"
-                :value="permission.id"
-                border
-              >
-                {{ permission.permissionName }} ({{ permission.permissionCode }})
-              </el-checkbox>
-            </div>
-          </el-checkbox-group>
+          <div style="width: 100%;">
+            <el-checkbox
+              :model-value="isAllSelected"
+              :indeterminate="isIndeterminate"
+              style="margin-bottom: 10px; font-weight: 500;"
+              @change="toggleSelectAll"
+            >全选</el-checkbox>
+            <el-divider style="margin: 0 0 10px;" />
+            <el-checkbox-group v-model="currentPermissionIds">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <el-checkbox
+                  v-for="permission in allPermissions"
+                  :key="permission.id"
+                  :label="permission.permissionName"
+                  :value="permission.id"
+                  border
+                >
+                  {{ permission.permissionName }} ({{ permission.permissionCode }})
+                </el-checkbox>
+              </div>
+            </el-checkbox-group>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>

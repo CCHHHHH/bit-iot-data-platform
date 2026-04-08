@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Delete, Plus, CopyDocument, Download, Upload } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { Delete, Plus, CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 // Props
@@ -8,7 +8,7 @@ interface Props {
   modelValue?: any
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   modelValue: () => ({})
 })
 
@@ -131,35 +131,12 @@ const copyMapping = (index: number) => {
   ElMessage.success('复制成功')
 }
 
-const requestThirdPartyData = () => {
-  ElMessage.info('请求第三方原始数据...')
-  // TODO: 调用实际 API
-}
-
-const inputThirdPartyData = () => {
-  ElMessage.info('输入第三方原始数据')
-  // TODO: 打开输入对话框
-}
-
-const inputPlatformStandardData = () => {
-  ElMessage.info('输入平台标准数据')
-  // TODO: 打开输入对话框
-}
-
-const testMapping = () => {
-  ElMessage.success('测试映射配置')
-  // TODO: 测试映射逻辑
-}
-
-const saveMapping = () => {
-  emit('update:modelValue', {
-    mappingConfigs: mappingConfigs.value,
-    scheduleTime: scheduleTime.value,
-    scheduleUnit: scheduleUnit.value,
-    mappingMode: mappingMode.value
-  })
-  ElMessage.success('保存成功')
-}
+emit('update:modelValue', {
+  mappingConfigs: mappingConfigs.value,
+  scheduleTime: scheduleTime.value,
+  scheduleUnit: scheduleUnit.value,
+  mappingMode: mappingMode.value
+})
 </script>
 
 <template>
@@ -184,7 +161,7 @@ const saveMapping = () => {
         <div class="mapping-content">
           <el-table :data="mappingConfigs" border style="width: 100%;" size="small">
             <el-table-column label="源字段" width="180">
-              <template #default="{ row, $index }">
+              <template #default="{ row }">
                 <div class="mapping-input">
                   <el-tag size="small" class="source-key">{{ row.sourceKey }}</el-tag>
                 </div>

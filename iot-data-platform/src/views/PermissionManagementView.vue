@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Plus, Delete, Search } from '@element-plus/icons-vue'
+import { Plus, Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
-  getPermissionList, 
-  addPermission as apiAddPermission, 
+import {
+  getPermissionList,
+  addPermission as apiAddPermission,
+  editPermission as apiEditPermission,
   deletePermission as apiDeletePermission
 } from '../api'
 
@@ -22,12 +23,14 @@ const pagination = ref({
   total: 0
 })
 
-// 新增权限对话框
+// 新增/编辑权限对话框
 const addPermissionDialogVisible = ref(false)
+const isEditing = ref(false)
 const addPermissionForm = ref({
+  id: '',
   permissionName: '',
   permissionCode: '',
-  description: '',
+  permissionDesc: '',
   permissionType: 'MENU'
 })
 const addPermissionFormRef = ref()
@@ -84,31 +87,51 @@ const handleSelectionChange = (selection: any[]) => {
 
 // 添加权限
 const addPermission = () => {
+  isEditing.value = false
   addPermissionForm.value = {
+    id: '',
     permissionName: '',
     permissionCode: '',
-    description: '',
+    permissionDesc: '',
     permissionType: 'MENU'
   }
   addPermissionDialogVisible.value = true
 }
 
-// 提交新增权限
+// 编辑权限
+const editPermission = (row: any) => {
+  isEditing.value = true
+  addPermissionForm.value = {
+    id: row.id,
+    permissionName: row.permissionName,
+    permissionCode: row.permissionCode,
+    permissionDesc: row.permissionDesc || row.description || '',
+    permissionType: row.permissionType || 'MENU'
+  }
+  addPermissionDialogVisible.value = true
+}
+
+// 提交新增/编辑权限
 const submitAddPermission = async () => {
   if (!addPermissionFormRef.value) return
-  
+
   await addPermissionFormRef.value.validate(async (valid: boolean) => {
     if (!valid) return
-    
+
     addPermissionLoading.value = true
     try {
-      await apiAddPermission(addPermissionForm.value)
-      ElMessage.success('添加权限成功')
+      if (isEditing.value) {
+        await apiEditPermission(addPermissionForm.value)
+        ElMessage.success('编辑权限成功')
+      } else {
+        await apiAddPermission(addPermissionForm.value)
+        ElMessage.success('添加权限成功')
+      }
       addPermissionDialogVisible.value = false
       await fetchPermissions()
     } catch (error: any) {
-      console.error('添加权限失败:', error)
-      ElMessage.error(error.response?.data?.message || '添加权限失败')
+      console.error(isEditing.value ? '编辑权限失败:' : '添加权限失败:', error)
+      ElMessage.error(error.response?.data?.message || (isEditing.value ? '编辑权限失败' : '添加权限失败'))
     } finally {
       addPermissionLoading.value = false
     }
@@ -232,14 +255,20 @@ const getPermissionTypeTag = (type: string) => {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="描述" show-overflow-tooltip />
-        <el-table-column prop="createTime" label="创建时间" show-overflow-tooltip />
-        <el-table-column label="操作" fixed="right" width="180" class-name="table-action-column">
+        <el-table-column prop="permissionDesc" label="描述" show-overflow-tooltip />
+        <el-table-column label="操作" fixed="right" width="200" class-name="table-action-column">
           <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="editPermission(row)"
+            >
+              <el-icon><Edit /></el-icon>
+              编辑
+            </el-button>
             <el-button
               type="danger"
               size="small"
-              class="delete-btn"
               @click="deletePermission(row.id, row.permissionName)"
             >
               <el-icon><Delete /></el-icon>
@@ -263,10 +292,10 @@ const getPermissionTypeTag = (type: string) => {
       </div>
     </div>
 
-    <!-- 新增权限对话框 -->
+    <!-- 新增/编辑权限对话框 -->
     <el-dialog
       v-model="addPermissionDialogVisible"
-      title="添加权限"
+      :title="isEditing ? '编辑权限' : '添加权限'"
       width="500px"
       :close-on-click-modal="false"
     >
@@ -303,11 +332,11 @@ const getPermissionTypeTag = (type: string) => {
         </el-form-item>
         <el-form-item
           label="描述"
-          prop="description"
+          prop="permissionDesc"
           :rules="[{ required: false }]"
         >
           <el-input
-            v-model="addPermissionForm.description"
+            v-model="addPermissionForm.permissionDesc"
             type="textarea"
             :rows="3"
             placeholder="请输入权限描述"

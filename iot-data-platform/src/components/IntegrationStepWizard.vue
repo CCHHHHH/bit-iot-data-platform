@@ -10,11 +10,26 @@ interface Plugin {
   pluginStatus: number
 }
 
-const props = defineProps<{ plugins: Plugin[] }>()
+interface WizardEditData {
+  id: string
+  integrationName?: string
+  pluginId?: string
+  integrationDesc?: string
+}
+
+const props = withDefaults(defineProps<{
+  plugins: Plugin[]
+  editData?: WizardEditData | null
+}>(), {
+  editData: null
+})
 const emit = defineEmits<{
   (e: 'done'): void
   (e: 'cancel'): void
 }>()
+
+const plugins = computed(() => props.plugins)
+const isEditMode = computed(() => Boolean(props.editData?.id))
 
 // ── 步骤状态 ───────────────────────────────────────────
 // 步骤: 1=集成配置 2=实例参数 3=设备属性 4=设备状态 5=时序数据
@@ -39,6 +54,7 @@ const stepMappingType: Record<number, string> = {
 const allDone = computed(() => Object.values(stepSaved.value).every(Boolean))
 
 const canAccessStep = (step: number): boolean => {
+  if (isEditMode.value) return true
   if (allDone.value) return true
   if (step === 1) return true
   if (step === 2) return stepSaved.value[1]
@@ -59,6 +75,7 @@ const goToStep = (step: number) => {
 const step1Form = ref({ integrationName: '', pluginId: '', integrationDesc: '' })
 const step1Loading = ref(false)
 const integrationId = ref('')
+const initLoading = ref(false)
 
 const saveStep1 = async () => {
   if (!step1Form.value.integrationName.trim()) {
@@ -71,15 +88,26 @@ const saveStep1 = async () => {
   }
   step1Loading.value = true
   try {
-    const resp = await api.addIntegration({
+    const payload = {
+      id: integrationId.value || undefined,
       integrationName: step1Form.value.integrationName,
       pluginId: step1Form.value.pluginId,
       integrationDesc: step1Form.value.integrationDesc
-    })
+    }
+
+    const resp = isEditMode.value
+      ? await api.updateIntegration(payload)
+      : await api.addIntegration(payload)
+
     if (resp.data?.code === 200) {
-      integrationId.value = resp.data.data || ''
+      if (!integrationId.value) {
+        integrationId.value = resp.data.data || props.editData?.id || ''
+      }
       stepSaved.value[1] = true
       ElMessage.success('集成配置已保存')
+      if (!isEditMode.value) {
+        await loadStep2ParamsForCreate()
+      }
       currentStep.value = 2
     } else {
       ElMessage.error(resp.data?.message || '保存失败')
@@ -96,47 +124,161 @@ interface ParamItem {
   key: string
   label: string
   value: string
-  required: boolean
-  placeholder: string
-}
-
-// 测试数据：模拟从插件读取的配置参数
-const mockParamsByPlugin: Record<string, ParamItem[]> = {
-  default: [
-    { key: 'host',           label: '服务器地址',  value: '',             required: true,  placeholder: '例：192.168.1.100' },
-    { key: 'port',           label: '端口号',      value: '1883',         required: true,  placeholder: '例：1883' },
-    { key: 'username',       label: '用户名',      value: '',             required: false, placeholder: '连接用户名（选填）' },
-    { key: 'password',       label: '密码',        value: '',             required: false, placeholder: '连接密码（选填）' },
-    { key: 'topic',          label: '订阅主题',    value: '#',            required: true,  placeholder: '例：/devices/#' },
-    { key: 'clientId',       label: '客户端 ID',   value: 'iot-client-001', required: false, placeholder: '客户端唯一标识' },
-    { key: 'keepAlive',      label: '心跳间隔(s)', value: '60',           required: false, placeholder: '秒，默认 60' },
-    { key: 'connectTimeout', label: '连接超时(s)', value: '30',           required: false, placeholder: '秒，默认 30' },
-  ]
+  description: string
 }
 
 const instanceParams = ref<ParamItem[]>([])
 const step2Saved = ref(false)
+const step2Loading = ref(false)
+const step2Error = ref('')
 
-// 当选择插件后，加载对应参数模板
-watch(() => step1Form.value.pluginId, (pluginId) => {
-  const template = mockParamsByPlugin[pluginId] ?? mockParamsByPlugin['default']
-  instanceParams.value = template.map(p => ({ ...p }))
+const mappingRecordIds = ref<Record<string, string>>({
+  device_attribute: '',
+  device_status: '',
+  timeseries: ''
 })
 
-const saveStep2 = () => {
-  const missing = instanceParams.value.filter(p => p.required && !p.value.trim())
-  if (missing.length) {
-    ElMessage.warning(`请填写必填参数：${missing.map(p => p.label).join('、')}`)
+const buildParamItemsFromTemplate = (items: api.PluginConfigItemDTO[] = []): ParamItem[] => {
+  return items.map((item) => ({
+    key: item.key,
+    label: item.key,
+    value: String(item.value ?? ''),
+    description: item.description || item.key
+  }))
+}
+
+const buildParamItemsFromConfigParams = (items: api.IntegrationConfigParamVO[] = []): ParamItem[] => {
+  return items.map((item) => ({
+    key: item.paramKey,
+    label: item.paramKey,
+    value: String(item.paramValue ?? ''),
+    description: item.paramKey
+  }))
+}
+
+const loadPluginDefaultParams = async (pluginId: string): Promise<ParamItem[]> => {
+  const resp = await api.getPluginDefaultConfig(pluginId)
+  if (resp.data?.code !== 200) {
+    throw new Error(resp.data?.message || '加载插件默认参数失败')
+  }
+  return buildParamItemsFromTemplate(resp.data?.data?.configItems || [])
+}
+
+const loadStep2ParamsForCreate = async () => {
+  if (!step1Form.value.pluginId) {
+    instanceParams.value = []
+    step2Saved.value = false
+    step2Error.value = '请先在第一步选择插件'
     return
   }
-  stepSaved.value[2] = true
-  step2Saved.value = true
-  ElMessage.success('实例参数已保存')
-  currentStep.value = 3
+
+  step2Loading.value = true
+  step2Error.value = ''
+  try {
+    instanceParams.value = await loadPluginDefaultParams(step1Form.value.pluginId)
+    step2Saved.value = false
+  } catch (error) {
+    instanceParams.value = []
+    step2Saved.value = false
+    step2Error.value = error instanceof Error ? error.message : '加载插件默认参数失败'
+  } finally {
+    step2Loading.value = false
+  }
+}
+
+const loadStep2ParamsForEdit = async (configParams?: api.IntegrationConfigParamVO[]) => {
+  if (!integrationId.value) {
+    instanceParams.value = []
+    step2Saved.value = false
+    step2Error.value = '未找到集成实例 ID'
+    return
+  }
+
+  step2Loading.value = true
+  step2Error.value = ''
+  try {
+    const respParams = configParams ?? await (async () => {
+      const resp = await api.getConfigParamList(integrationId.value)
+      if (resp.data?.code !== 200) {
+        throw new Error(resp.data?.message || '加载实例参数失败')
+      }
+      return Array.isArray(resp.data?.data) ? resp.data.data : []
+    })()
+
+    if (respParams.length > 0) {
+      instanceParams.value = buildParamItemsFromConfigParams(respParams)
+      step2Saved.value = true
+      return
+    }
+
+    instanceParams.value = await loadPluginDefaultParams(step1Form.value.pluginId)
+    step2Saved.value = false
+  } catch (error) {
+    instanceParams.value = []
+    step2Saved.value = false
+    step2Error.value = error instanceof Error ? error.message : '加载实例参数失败'
+  } finally {
+    step2Loading.value = false
+  }
+}
+
+const retryLoadStep2Params = async () => {
+  try {
+    if (isEditMode.value) {
+      const resp = await api.getConfigParamList(integrationId.value)
+      if (resp.data?.code !== 200) {
+        step2Error.value = resp.data?.message || '加载实例参数失败'
+        return
+      }
+      await loadStep2ParamsForEdit(Array.isArray(resp.data?.data) ? resp.data.data : [])
+      return
+    }
+
+    await loadStep2ParamsForCreate()
+  } catch (error) {
+    step2Error.value = error instanceof Error ? error.message : '加载实例参数失败'
+  }
+}
+
+const saveStep2 = async () => {
+  if (!integrationId.value) {
+    ElMessage.warning('请先保存集成配置')
+    return
+  }
+
+  if (step2Loading.value) {
+    return
+  }
+
+  if (!instanceParams.value.length) {
+    ElMessage.warning('当前没有可保存的实例参数')
+    return
+  }
+
+  try {
+    const payload: api.IntegrationConfigParamRequest[] = instanceParams.value.map(item => ({
+      integrationId: integrationId.value,
+      paramKey: item.key,
+      paramValue: String(item.value ?? '')
+    }))
+    const resp = await api.saveConfigParams(integrationId.value, payload)
+    if (resp.data?.code !== 200) {
+      ElMessage.error(resp.data?.message || '实例参数保存失败')
+      return
+    }
+    stepSaved.value[2] = true
+    step2Saved.value = true
+    step2Error.value = ''
+    ElMessage.success('实例参数已保存')
+    currentStep.value = 3
+  } catch {
+    ElMessage.error('实例参数保存失败')
+  }
 }
 
 // ── 步骤 3-5：数据对接 ─────────────────────────────────
 interface MappingStep {
+  id?: string
   methodName: string
   schedulerTime: number
   schedulerUnit: string
@@ -146,9 +288,9 @@ interface MappingStep {
 }
 
 const mappings = ref<Record<string, MappingStep>>({
-  device_attribute: { methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
-  device_status:    { methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
-  timeseries:       { methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
+  device_attribute: { id: '', methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
+  device_status:    { id: '', methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
+  timeseries:       { id: '', methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
 })
 
 const currentMappingType = computed(() => stepMappingType[currentStep.value] ?? '')
@@ -191,14 +333,22 @@ const saveMappingStep = async () => {
   m.saveLoading = true
   try {
     const payload: any = {
+      id: mappingRecordIds.value[currentMappingType.value] || undefined,
       integrationId: integrationId.value,
       mappingType: currentMappingType.value,
+      methodName: m.methodName,
       sourceData: m.invokeResult != null ? JSON.stringify(m.invokeResult) : '',
       schedulerTime: m.schedulerTime,
       schedulerUnit: m.schedulerUnit
     }
-    const resp = await api.addDataMapping(payload)
+    const resp = mappingRecordIds.value[currentMappingType.value]
+      ? await api.updateDataMapping(payload)
+      : await api.addDataMapping(payload)
+
     if (resp.data?.code === 200) {
+      if (!mappingRecordIds.value[currentMappingType.value]) {
+        mappingRecordIds.value[currentMappingType.value] = resp.data.data || payload.id || ''
+      }
       stepSaved.value[step] = true
       ElMessage.success('保存成功')
       if (step === 3 && !stepSaved.value[4]) {
@@ -215,10 +365,101 @@ const saveMappingStep = async () => {
     m.saveLoading = false
   }
 }
+
+const resetWizardState = () => {
+  currentStep.value = 1
+  stepSaved.value = { 1: false, 2: false, 3: false, 4: false, 5: false }
+  step1Form.value = { integrationName: '', pluginId: '', integrationDesc: '' }
+  integrationId.value = ''
+  instanceParams.value = []
+  step2Saved.value = false
+  step2Loading.value = false
+  step2Error.value = ''
+  mappingRecordIds.value = { device_attribute: '', device_status: '', timeseries: '' }
+  mappings.value = {
+    device_attribute: { id: '', methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
+    device_status: { id: '', methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false },
+    timeseries: { id: '', methodName: '', schedulerTime: 30, schedulerUnit: 's', invokeResult: null, invokeLoading: false, saveLoading: false }
+  }
+}
+
+const loadEditData = async (editData: WizardEditData) => {
+  initLoading.value = true
+  try {
+    resetWizardState()
+    integrationId.value = editData.id
+    step1Form.value = {
+      integrationName: editData.integrationName || '',
+      pluginId: editData.pluginId || '',
+      integrationDesc: editData.integrationDesc || ''
+    }
+
+    const [integrationResp, configParamsResp, mappingResp] = await Promise.all([
+      api.getIntegrationById(editData.id),
+      api.getConfigParamList(editData.id),
+      api.getDataMappingByIntegration(editData.id)
+    ])
+
+    const integrationDetail = integrationResp.data?.data || {}
+    step1Form.value.integrationName = integrationDetail.integrationName || integrationDetail.name || step1Form.value.integrationName
+    step1Form.value.pluginId = integrationDetail.pluginId || step1Form.value.pluginId
+    step1Form.value.integrationDesc = integrationDetail.integrationDesc || integrationDetail.description || step1Form.value.integrationDesc
+
+    if (configParamsResp.data?.code !== 200) {
+      throw new Error(configParamsResp.data?.message || '加载实例参数失败')
+    }
+
+    const configParams = Array.isArray(configParamsResp.data?.data) ? configParamsResp.data.data : []
+    await loadStep2ParamsForEdit(configParams)
+
+    const mappingsData = Array.isArray(mappingResp.data?.data) ? mappingResp.data.data : []
+    mappingsData.forEach((item: any) => {
+      const type = item.mappingType
+      if (!type || !mappings.value[type]) return
+
+      mappingRecordIds.value[type] = item.id || ''
+      mappings.value[type] = {
+        ...mappings.value[type],
+        id: item.id || '',
+        methodName: item.methodName || '',
+        schedulerTime: Number(item.schedulerTime ?? 30),
+        schedulerUnit: item.schedulerUnit || 's',
+        invokeResult: item.sourceData ? (() => {
+          try { return JSON.parse(item.sourceData) } catch { return item.sourceData }
+        })() : null
+      }
+    })
+
+    stepSaved.value = {
+      1: true,
+      2: step2Saved.value,
+      3: Boolean(mappingRecordIds.value.device_attribute),
+      4: Boolean(mappingRecordIds.value.device_status),
+      5: Boolean(mappingRecordIds.value.timeseries)
+    }
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '加载集成配置失败')
+  } finally {
+    initLoading.value = false
+  }
+}
+
+watch(
+  () => props.editData,
+  async (editData) => {
+    if (editData?.id) {
+      await loadEditData(editData)
+      return
+    }
+
+    resetWizardState()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
-  <div class="wizard">
+  <div class="wizard" v-loading="initLoading">
     <!-- 步骤指示器 -->
     <div class="step-nav">
       <template v-for="step in TOTAL_STEPS" :key="step">
@@ -251,7 +492,6 @@ const saveMappingStep = async () => {
             <el-input
               v-model="step1Form.integrationName"
               placeholder="请输入集成实例名称"
-              :disabled="stepSaved[1]"
             />
           </el-form-item>
           <el-form-item label="选择插件" required>
@@ -259,7 +499,7 @@ const saveMappingStep = async () => {
               v-model="step1Form.pluginId"
               placeholder="请选择插件"
               style="width: 100%"
-              :disabled="stepSaved[1]"
+              :disabled="isEditMode"
             >
               <el-option
                 v-for="p in plugins"
@@ -275,12 +515,16 @@ const saveMappingStep = async () => {
               type="textarea"
               :rows="3"
               placeholder="请输入集成实例描述（选填）"
-              :disabled="stepSaved[1]"
             />
           </el-form-item>
         </el-form>
         <div v-if="stepSaved[1]" class="saved-hint">
-          <el-alert type="success" :closable="false" show-icon title="集成配置已保存，可修改后重新保存" />
+          <el-alert
+            type="success"
+            :closable="false"
+            show-icon
+            :title="isEditMode ? '当前为编辑模式，插件不可修改，其余信息可重新保存' : '集成配置已保存，可修改后重新保存'"
+          />
         </div>
       </div>
 
@@ -289,34 +533,50 @@ const saveMappingStep = async () => {
         <div class="params-desc">
           以下参数从插件配置中读取，<strong>参数名</strong>不可修改，请填写对应的参数值。
         </div>
-        <div class="params-table">
-          <div class="params-header">
-            <span class="col-key">参数名</span>
-            <span class="col-label">说明</span>
-            <span class="col-value">参数值</span>
-          </div>
-          <div
-            v-for="param in instanceParams"
-            :key="param.key"
-            class="params-row"
+        <div v-if="step2Error" class="saved-hint">
+          <el-alert
+            type="error"
+            :closable="false"
+            show-icon
+            :title="step2Error"
           >
-            <span class="col-key">
-              <code>{{ param.key }}</code>
-              <el-tag v-if="param.required" type="danger" size="small" class="required-tag">必填</el-tag>
-            </span>
-            <span class="col-label">{{ param.label }}</span>
-            <span class="col-value">
-              <el-input
-                v-model="param.value"
-                :placeholder="param.placeholder"
-                size="small"
-                clearable
-              />
-            </span>
+            <template #default>
+              <el-button link type="primary" @click="retryLoadStep2Params">重试加载</el-button>
+            </template>
+          </el-alert>
+        </div>
+        <div class="params-table">
+          <div v-if="step2Loading" class="params-loading">
+            <el-skeleton :rows="4" animated />
           </div>
-          <div v-if="instanceParams.length === 0" class="params-empty">
-            <el-empty description="该插件无配置参数" :image-size="60" />
-          </div>
+          <template v-else>
+            <div class="params-header">
+              <span class="col-key">参数名</span>
+              <span class="col-label">说明</span>
+              <span class="col-value">参数值</span>
+            </div>
+            <div
+              v-for="param in instanceParams"
+              :key="param.key"
+              class="params-row"
+            >
+              <span class="col-key">
+                <code>{{ param.key }}</code>
+              </span>
+              <span class="col-label">{{ param.description || param.label }}</span>
+              <span class="col-value">
+                <el-input
+                  v-model="param.value"
+                  :placeholder="`请输入${param.label}`"
+                  size="small"
+                  clearable
+                />
+              </span>
+            </div>
+            <div v-if="instanceParams.length === 0" class="params-empty">
+              <el-empty description="该插件无配置参数" :image-size="60" />
+            </div>
+          </template>
         </div>
         <div v-if="stepSaved[2]" class="saved-hint">
           <el-alert type="success" :closable="false" show-icon title="实例参数已保存，可修改后重新保存" />
@@ -392,7 +652,7 @@ const saveMappingStep = async () => {
         <!-- 步骤 2 -->
         <template v-else-if="currentStep === 2">
           <el-button @click="goToStep(1)">上一步</el-button>
-          <el-button type="primary" @click="saveStep2">
+          <el-button type="primary" :loading="step2Loading" @click="saveStep2">
             {{ stepSaved[2] ? '重新保存' : '保存并进入下一步' }}
           </el-button>
           <el-button v-if="stepSaved[2]" @click="goToStep(3)">下一步</el-button>
@@ -571,6 +831,11 @@ const saveMappingStep = async () => {
   border: 1px solid var(--el-border-color-lighter, #ebeef5);
   border-radius: 8px;
   overflow: hidden;
+}
+
+.params-loading {
+  padding: 20px 16px;
+  background: #fff;
 }
 
 .params-header {

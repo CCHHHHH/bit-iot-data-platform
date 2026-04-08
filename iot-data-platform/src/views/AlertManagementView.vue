@@ -1,120 +1,139 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useDashboardStore } from '../stores/dashboard'
-import { Refresh, Search } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { getAlarmList, resolveAlarm as resolveAlarmApi } from '../api/rule-engine'
 
-const dashboardStore = useDashboardStore()
+type AlertLevel = 'error' | 'warning' | 'info'
+type AlertStatus = 'active' | 'resolved'
+
+interface AlertListItem {
+  id: string
+  deviceId: string
+  deviceName: string
+  title: string
+  message: string
+  level: AlertLevel
+  rawLevel: string
+  timestamp: string
+  status: AlertStatus
+  rawStatus: string
+  ruleName: string
+  triggerCount: number
+}
+
 const loading = ref(true)
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const levelFilter = ref('all')
+const alerts = ref<AlertListItem[]>([])
 
-// 分页状态
 const pagination = ref({
   currentPage: 1,
   pageSize: 10,
   total: 0
 })
 
-// 模拟告警数据
-const mockAlerts = [
-  {
-    id: '1',
-    deviceId: 'dev-001',
-    deviceName: '温湿度传感器-001',
-    type: 'temperature',
-    message: '温度超出阈值',
-    level: 'error' as const,
-    timestamp: '2026-02-04 10:30:00',
-    status: 'active' as const
-  },
-  {
-    id: '2',
-    deviceId: 'dev-002',
-    deviceName: '气压传感器-001',
-    type: 'pressure',
-    message: '气压异常',
-    level: 'warning' as const,
-    timestamp: '2026-02-04 09:15:00',
-    status: 'active' as const
-  },
-  {
-    id: '3',
-    deviceId: 'dev-003',
-    deviceName: '光照传感器-001',
-    type: 'light',
-    message: '光照强度不足',
-    level: 'info' as const,
-    timestamp: '2026-02-04 08:45:00',
-    status: 'active' as const
-  },
-  {
-    id: '4',
-    deviceId: 'dev-004',
-    deviceName: '烟雾传感器-001',
-    type: 'smoke',
-    message: '烟雾浓度过高',
-    level: 'error' as const,
-    timestamp: '2026-02-04 07:20:00',
-    status: 'resolved' as const
-  },
-  {
-    id: '5',
-    deviceId: 'dev-005',
-    deviceName: '温湿度传感器-002',
-    type: 'humidity',
-    message: '湿度异常',
-    level: 'warning' as const,
-    timestamp: '2026-02-04 06:50:00',
-    status: 'resolved' as const
+const normalizeAlarmLevel = (level?: string): AlertLevel => {
+  const normalized = (level || '').toLowerCase()
+
+  if (['critical', 'major', 'error', 'urgent', 'high'].includes(normalized)) {
+    return 'error'
   }
-]
+
+  if (['minor', 'warning', 'warn', 'medium'].includes(normalized)) {
+    return 'warning'
+  }
+
+  return 'info'
+}
+
+const normalizeAlarmStatus = (status?: string): AlertStatus => {
+  const normalized = (status || '').toLowerCase()
+
+  if (['resolved', 'closed', 'handled', 'done', 'processed'].includes(normalized)) {
+    return 'resolved'
+  }
+
+  return 'active'
+}
+
+const mapAlarmRecord = (item: any): AlertListItem => ({
+  id: item.id || '',
+  deviceId: item.deviceId || '',
+  deviceName: item.deviceName || '未关联设备',
+  title: item.alarmTitle || '未命名告警',
+  message: item.alarmMessage || item.alarmTitle || '-',
+  level: normalizeAlarmLevel(item.alarmLevel),
+  rawLevel: item.alarmLevel || '',
+  timestamp: item.lastTriggerTime || item.firstTriggerTime || item.createTime || '',
+  status: normalizeAlarmStatus(item.alarmStatus),
+  rawStatus: item.alarmStatus || '',
+  ruleName: item.ruleName || '-',
+  triggerCount: Number(item.triggerCount || 0)
+})
+
+const buildAlarmQuery = () => ({
+  current: pagination.value.currentPage,
+  size: pagination.value.pageSize,
+  keyword: searchQuery.value || undefined,
+  alarmStatus: statusFilter.value === 'all' ? undefined : statusFilter.value,
+  alarmLevel: levelFilter.value === 'all' ? undefined : levelFilter.value
+})
+
+const loadAlerts = async () => {
+  loading.value = true
+  try {
+    const response = await getAlarmList(buildAlarmQuery())
+
+    if (response.data?.code === 200) {
+      const data = Array.isArray(response.data.data) ? response.data.data : []
+      alerts.value = data.map(mapAlarmRecord)
+      pagination.value.total = response.data.total || data.length
+    } else {
+      alerts.value = []
+      pagination.value.total = 0
+      ElMessage.error(response.data?.message || '获取告警列表失败')
+    }
+  } catch (error) {
+    alerts.value = []
+    pagination.value.total = 0
+    ElMessage.error('获取告警列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 onMounted(() => {
-  // 模拟加载
-  setTimeout(() => {
-    dashboardStore.setAlerts(mockAlerts)
-    pagination.value.total = mockAlerts.length
-    loading.value = false
-  }, 1000)
+  loadAlerts()
 })
 
-// 分页方法
-const handleSizeChange = (size: number) => {
+const handleSizeChange = async (size: number) => {
   pagination.value.pageSize = size
   pagination.value.currentPage = 1
+  await loadAlerts()
 }
 
-const handleCurrentChange = (current: number) => {
+const handleCurrentChange = async (current: number) => {
   pagination.value.currentPage = current
+  await loadAlerts()
 }
 
-// 计算分页后的数据
-const paginatedAlerts = computed(() => {
-  const alerts = dashboardStore.alerts
-  const { currentPage, pageSize } = pagination.value
-  const start = (currentPage - 1) * pageSize
-  const end = start + pageSize
-  return alerts.slice(start, end)
-})
-
-// 状态选项
 const statusOptions = [
   { value: 'all', label: '全部状态' },
-  { value: 'active', label: '活跃' },
-  { value: 'resolved', label: '已解决' }
+  { value: 'ACTIVE', label: '未解决' },
+  { value: 'RESOLVED', label: '已解决' }
 ]
 
-// 级别选项
 const levelOptions = [
   { value: 'all', label: '全部级别' },
-  { value: 'error', label: '错误' },
-  { value: 'warning', label: '警告' },
-  { value: 'info', label: '信息' }
+  { value: 'CRITICAL', label: '严重' },
+  { value: 'MAJOR', label: '重要' },
+  { value: 'MINOR', label: '次要' },
+  { value: 'WARNING', label: '提示' }
 ]
 
-// 告警级别样式
-const getAlertLevelClass = (level: string) => {
+const getAlertLevelClass = (level: AlertLevel) => {
   switch (level) {
     case 'error':
       return 'alert-error'
@@ -127,34 +146,54 @@ const getAlertLevelClass = (level: string) => {
   }
 }
 
-// 状态样式
-const getStatusClass = (status: string) => {
+const getAlertLevelText = (alert: AlertListItem) => {
+  const normalized = (alert.rawLevel || '').toUpperCase()
+
+  if (normalized === 'CRITICAL') return '严重'
+  if (normalized === 'MAJOR') return '重要'
+  if (normalized === 'MINOR') return '次要'
+  if (normalized === 'WARNING') return '提示'
+
+  if (alert.level === 'error') return '错误'
+  if (alert.level === 'warning') return '警告'
+  return '信息'
+}
+
+const getStatusClass = (status: AlertStatus) => {
   return status === 'active' ? 'status-active' : 'status-resolved'
 }
 
-// 处理告警
-const handleAlert = (id: string) => {
-  // 处理告警逻辑
-  console.log('处理告警:', id)
-  dashboardStore.resolveAlert(id)
+const getStatusText = (alert: AlertListItem) => {
+  const normalized = (alert.rawStatus || '').toUpperCase()
+
+  if (normalized === 'RESOLVED') return '已解决'
+  if (normalized === 'ACTIVE') return '未解决'
+
+  return alert.status === 'active' ? '活跃' : '已解决'
 }
 
-// 刷新告警
-const refreshAlerts = () => {
-  // 刷新告警逻辑
-  console.log('刷新告警')
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-  }, 1000)
+const handleAlert = async (id: string) => {
+  try {
+    const response = await resolveAlarmApi(id)
+
+    if (response.data?.code === 200) {
+      ElMessage.success('告警已处理')
+      await loadAlerts()
+    } else {
+      ElMessage.error(response.data?.message || '处理告警失败')
+    }
+  } catch {
+    ElMessage.error('处理告警失败')
+  }
 }
 
-// 搜索告警
-const searchAlerts = () => {
-  // 搜索告警逻辑
-  console.log('搜索告警:', searchQuery.value)
-  // 这里可以添加实际的搜索逻辑
-  // 例如：根据 searchQuery 过滤告警数据
+const refreshAlerts = async () => {
+  await loadAlerts()
+}
+
+const searchAlerts = async () => {
+  pagination.value.currentPage = 1
+  await loadAlerts()
 }
 </script>
 
@@ -168,22 +207,22 @@ const searchAlerts = () => {
       </el-button>
     </div>
 
-    <!-- 告警列表面板 -->
     <div class="list-panel" v-loading="loading">
       <div class="list-toolbar">
         <el-input
           v-model="searchQuery"
-          placeholder="搜索设备名称或告警信息"
+          placeholder="搜索设备名称、规则名称或告警信息"
           prefix-icon="Search"
           clearable
-          style="width: 280px;"
+          style="width: 320px;"
           @keydown.enter="searchAlerts"
         />
         <el-select
           v-model="statusFilter"
           placeholder="全部状态"
           clearable
-          style="width: 120px;"
+          style="width: 132px;"
+          @change="searchAlerts"
         >
           <el-option
             v-for="option in statusOptions"
@@ -196,7 +235,8 @@ const searchAlerts = () => {
           v-model="levelFilter"
           placeholder="全部级别"
           clearable
-          style="width: 120px;"
+          style="width: 132px;"
+          @change="searchAlerts"
         >
           <el-option
             v-for="option in levelOptions"
@@ -213,29 +253,32 @@ const searchAlerts = () => {
         </div>
       </div>
       <el-table
-        :data="paginatedAlerts"
+        :data="alerts"
         style="width: 100%"
         size="small"
         :row-style="{ height: '48px' }"
       >
-        <el-table-column prop="deviceName" label="设备名称" show-overflow-tooltip />
-        <el-table-column prop="message" label="告警信息" show-overflow-tooltip />
-        <el-table-column prop="level" label="告警级别" show-overflow-tooltip>
+        <el-table-column prop="deviceName" label="设备名称" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="title" label="告警标题" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="message" label="告警信息" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="ruleName" label="规则名称" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="level" label="告警级别" width="100" align="center">
           <template #default="{ row }">
             <span class="alert-level" :class="getAlertLevelClass(row.level)">
-              {{ row.level === 'error' ? '错误' : row.level === 'warning' ? '警告' : '信息' }}
+              {{ getAlertLevelText(row) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="timestamp" label="发生时间" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" show-overflow-tooltip>
+        <el-table-column prop="triggerCount" label="触发次数" width="90" align="center" />
+        <el-table-column prop="timestamp" label="最近触发时间" width="180" show-overflow-tooltip />
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
             <span class="alert-status" :class="getStatusClass(row.status)">
-              {{ row.status === 'active' ? '活跃' : '已解决' }}
+              {{ getStatusText(row) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" class-name="table-action-column" width="200">
+        <el-table-column label="操作" fixed="right" class-name="table-action-column" width="120" align="center">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'active'"
@@ -245,10 +288,11 @@ const searchAlerts = () => {
             >
               处理
             </el-button>
+            <span v-else class="resolved-text">已处理</span>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <div class="list-footer">
         <el-pagination
           v-model:current-page="pagination.currentPage"
@@ -278,8 +322,18 @@ const searchAlerts = () => {
   margin-bottom: 20px;
 }
 
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
 
 .alert-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 12px;
@@ -287,21 +341,25 @@ const searchAlerts = () => {
 }
 
 .alert-error {
-  background-color: #fef0f0;
-  color: #f56c6c;
+  background-color: #fef2f2;
+  color: #dc2626;
 }
 
 .alert-warning {
-  background-color: #fdf6ec;
-  color: #e6a23c;
+  background-color: #fffbeb;
+  color: #d97706;
 }
 
 .alert-info {
-  background-color: #ecf5ff;
-  color: #409eff;
+  background-color: #eff6ff;
+  color: #1668dc;
 }
 
 .alert-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 12px;
@@ -309,13 +367,17 @@ const searchAlerts = () => {
 }
 
 .status-active {
-  background-color: #fef0f0;
-  color: #f56c6c;
+  background-color: #fef3c7;
+  color: #b45309;
 }
 
 .status-resolved {
-  background-color: #f0f9eb;
-  color: #67c23a;
+  background-color: #f0fdf4;
+  color: #15803d;
 }
 
+.resolved-text {
+  font-size: 12px;
+  color: #909399;
+}
 </style>

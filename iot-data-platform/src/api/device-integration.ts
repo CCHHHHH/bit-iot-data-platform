@@ -1,5 +1,30 @@
 import request from '../utils/request'
 
+export interface PluginConfigItemDTO {
+  key: string
+  value?: string
+  description?: string
+}
+
+export interface IntegrationPluginConfigVO {
+  pluginId?: string
+  integrationId?: string
+  configItems?: PluginConfigItemDTO[]
+}
+
+export interface IntegrationConfigParamVO {
+  id?: string
+  integrationId?: string
+  paramKey: string
+  paramValue?: string
+}
+
+export interface IntegrationConfigParamRequest {
+  integrationId?: string
+  paramKey: string
+  paramValue: string
+}
+
 // ========== 插件管理接口 ==========
 
 /**
@@ -111,13 +136,16 @@ export function uploadPlugin(file: File, params?: {
   pluginType?: string
 }) {
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', file, file.name)
   const query: Record<string, string> = {}
   if (params?.pluginName) query.pluginName = params.pluginName
   if (params?.description) query.description = params.description
   if (params?.pluginType) query.pluginType = params.pluginType
   return request.post('/api/integration/iot/integration-plugin/upload', formData, {
-    params: Object.keys(query).length ? query : undefined
+    params: Object.keys(query).length ? query : undefined,
+    headers: {
+      'Content-Type': undefined
+    }
   })
 }
 
@@ -152,6 +180,18 @@ export function getIntegrationList(params?: {
  */
 export function getIntegrationById(id: string) {
   return request.get(`/api/integration/iot/integration-config/${id}`)
+}
+
+export function getPluginDefaultConfig(id: string) {
+  return request.get(`/api/integration/iot/integration-plugin/${id}/default-config`)
+}
+
+export function getConfigParamList(integrationId: string) {
+  return request.get(`/api/integration/iot/integration-config-param/list/${integrationId}`)
+}
+
+export function saveConfigParams(integrationId: string, data: IntegrationConfigParamRequest[]) {
+  return request.post(`/api/integration/iot/integration-config-param/batch/${integrationId}`, data)
 }
 
 /**

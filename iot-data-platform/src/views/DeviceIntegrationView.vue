@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Plus, Edit, Delete, RefreshRight, Upload, VideoPlay, VideoPause, Search, UploadFilled } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import DataMappingView from '../components/DataMappingView.vue'
+import { ref, nextTick, onMounted } from 'vue'
+import { Plus, Edit, Delete, RefreshRight, Upload, Search, UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, genFileId } from 'element-plus'
+import type { UploadFile, UploadFiles, UploadInstance, UploadRawFile, UploadUserFile } from 'element-plus'
 import IntegrationStepWizard from '../components/IntegrationStepWizard.vue'
-import JsonMappingView from '../components/JsonMappingView.vue'
 import * as deviceIntegrationApi from '../api/device-integration'
 
 // Tab 切换状态
@@ -142,34 +141,56 @@ onMounted(async () => {
 
 // 上传插件对话框
 const uploadDialogVisible = ref(false)
-const uploadFileRef = ref()
+const uploadFileRef = ref<UploadInstance>()
 const uploadForm = ref({ pluginName: '', pluginType: '', description: '' })
 const uploadLoading = ref(false)
-const uploadFile = ref<File | null>(null)
+const uploadFileList = ref<UploadUserFile[]>([])
 
 // 打开上传对话框
 const openUploadDialog = () => {
   uploadForm.value = { pluginName: '', pluginType: '', description: '' }
-  uploadFile.value = null
+  uploadFileList.value = []
   uploadDialogVisible.value = true
+  nextTick(() => {
+    uploadFileRef.value?.clearFiles()
+  })
 }
 
-// 处理文件选择（el-upload on-change 回调参数是 UploadFile，需取 .raw 获得原始 File 对象）
-const handleFileChange = (file: any) => {
-  uploadFile.value = file.raw ?? file
+const handleFileChange = (file: UploadFile, files: UploadFiles) => {
+  uploadFileList.value = files.slice(-1)
+
+  if (!uploadForm.value.pluginType && file.name) {
+    const suffix = file.name.split('.').pop()?.toLowerCase()
+    uploadForm.value.pluginType = suffix || ''
+  }
+
+  if (!uploadForm.value.pluginName && file.name) {
+    uploadForm.value.pluginName = file.name.replace(/\.[^.]+$/, '')
+  }
+}
+
+// 超出 limit 时用新文件替换旧文件
+const handleFileExceed = (files: UploadRawFile[]) => {
+  uploadFileRef.value?.clearFiles()
+  const file = files[0]
+  file.uid = genFileId()
+  uploadFileRef.value?.handleStart(file)
+  uploadFileList.value = [file]
 }
 
 // 上传插件
 const handleUploadPlugin = async () => {
   try {
-    if (!uploadFile.value) {
+    const file = uploadFileList.value[0]?.raw
+
+    if (!file) {
       ElMessage.warning('请选择要上传的插件文件')
       return
     }
 
     uploadLoading.value = true
 
-    const response = await deviceIntegrationApi.uploadPlugin(uploadFile.value, {
+    const response = await deviceIntegrationApi.uploadPlugin(file, {
       pluginName: uploadForm.value.pluginName || undefined,
       pluginType: uploadForm.value.pluginType || undefined,
       description: uploadForm.value.description || undefined
@@ -178,6 +199,8 @@ const handleUploadPlugin = async () => {
     if (response.data && response.data.code === 200) {
       ElMessage.success('插件上传成功')
       uploadDialogVisible.value = false
+      uploadFileList.value = []
+      uploadFileRef.value?.clearFiles()
       await loadPlugins()
     } else {
       ElMessage.error(response.data?.message || '插件上传失败')
@@ -297,46 +320,30 @@ const deletePlugin = async (id: string) => {
 
 // 新增集成向导对话框
 const wizardDialogVisible = ref(false)
+const wizardMode = ref<'create' | 'edit'>('create')
+const editingIntegration = ref<any>(null)
 
 const openCreateIntegration = () => {
+  wizardMode.value = 'create'
+  editingIntegration.value = null
   wizardDialogVisible.value = true
 }
 
 const handleWizardDone = async () => {
   wizardDialogVisible.value = false
+  editingIntegration.value = null
   await loadIntegrations()
 }
 
-// 编辑集成（简单表单，仅修改基础信息）
-const integrationDialogVisible = ref(false)
-const integrationForm = ref({ id: '', integrationName: '', pluginId: '', integrationDesc: '' })
-
 const openEditIntegration = (row: any) => {
-  integrationForm.value = {
+  editingIntegration.value = {
     id: row.id || '',
     integrationName: row.integrationName || '',
     pluginId: row.pluginId || '',
     integrationDesc: row.integrationDesc || ''
   }
-  integrationDialogVisible.value = true
-}
-
-const handleSaveIntegration = async () => {
-  try {
-    integrationLoading.value = true
-    const response = await deviceIntegrationApi.updateIntegration(integrationForm.value)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('更新成功')
-      integrationDialogVisible.value = false
-      await loadIntegrations()
-    } else {
-      ElMessage.error(response.data?.message || '更新失败')
-    }
-  } catch (error) {
-    ElMessage.error('更新失败')
-  } finally {
-    integrationLoading.value = false
-  }
+  wizardMode.value = 'edit'
+  wizardDialogVisible.value = true
 }
 
 // 启动/停止集成（integrationStatus: 1=运行中, 0=已暂停）
@@ -396,73 +403,6 @@ const deleteIntegration = async (id: string) => {
   }
 }
 
-// ========== 数据映射相关 ==========
-const mappingMode = ref<'json' | 'js'>('json')
-const mappingData = ref<any>({})
-const thirdPartyData = ref<any>({
-  data: [{
-    deviceName: '9#温湿度传感器',
-    deviceTag: 'chuanganqi_63',
-    deviceTagOriginal: '582D3484A0EA',
-    deviceType: '传感器',
-    manufacturer: '青萍',
-    runningStatus: '在线',
-    status: 'ENABLED'
-  }]
-})
-const mappingConfigs = ref<any[]>([
-  {
-    sourceKey: 'deviceName',
-    targetKey: 'display_name',
-    matchType: 'fuzzy',
-    defaultValue: '',
-    dataType: 'string',
-    transformType: 'none'
-  },
-  {
-    sourceKey: 'status',
-    targetKey: 'status',
-    matchType: 'fuzzy',
-    defaultValue: '',
-    dataType: 'string',
-    transformType: 'none'
-  },
-  {
-    sourceKey: 'deviceTagOriginal',
-    targetKey: 'third_id',
-    matchType: 'fuzzy',
-    defaultValue: '',
-    dataType: 'string',
-    transformType: 'none'
-  },
-  {
-    sourceKey: 'runningStatus',
-    targetKey: 'runningStatus',
-    matchType: 'fuzzy',
-    defaultValue: '',
-    dataType: 'string',
-    transformType: 'convert_online_status'
-  },
-  {
-    sourceKey: 'deviceTagOriginal',
-    targetKey: 'serial_number',
-    matchType: 'fuzzy',
-    defaultValue: '',
-    dataType: 'string',
-    transformType: 'none'
-  },
-  {
-    sourceKey: 'deviceTagOriginal',
-    targetKey: 'show_third_id',
-    matchType: 'fuzzy',
-    defaultValue: '',
-    dataType: 'string',
-    transformType: 'none'
-  }
-])
-const scheduleTime = ref(0)
-const scheduleUnit = ref<'second' | 'minute' | 'hour'>('second')
-const isEditing = ref(false)
 </script>
 
 <template>
@@ -664,9 +604,11 @@ const isEditing = ref(false)
         <el-form-item label="插件文件" required>
           <el-upload
             ref="uploadFileRef"
+            v-model:file-list="uploadFileList"
             drag
             :auto-upload="false"
             :on-change="handleFileChange"
+            :on-exceed="handleFileExceed"
             :limit="1"
             accept=".jar,.zip"
           >
@@ -742,7 +684,7 @@ const isEditing = ref(false)
     <!-- 新增集成向导对话框 -->
     <el-dialog
       v-model="wizardDialogVisible"
-      title="新增集成实例"
+      :title="wizardMode === 'edit' ? '编辑集成实例' : '新增集成实例'"
       width="780px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -750,44 +692,10 @@ const isEditing = ref(false)
     >
       <IntegrationStepWizard
         :plugins="plugins"
+        :edit-data="editingIntegration"
         @done="handleWizardDone"
-        @cancel="wizardDialogVisible = false"
+        @cancel="wizardDialogVisible = false; editingIntegration = null"
       />
-    </el-dialog>
-
-    <!-- 编辑集成对话框 -->
-    <el-dialog
-      v-model="integrationDialogVisible"
-      title="编辑集成"
-      width="500px"
-    >
-      <el-form :model="integrationForm" label-width="100px">
-        <el-form-item label="集成名称" required>
-          <el-input v-model="integrationForm.integrationName" placeholder="请输入集成名称" />
-        </el-form-item>
-        <el-form-item label="绑定插件">
-          <el-select v-model="integrationForm.pluginId" placeholder="请选择插件" style="width: 100%">
-            <el-option
-              v-for="plugin in plugins"
-              :key="plugin.id"
-              :label="plugin.pluginName"
-              :value="plugin.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input
-            v-model="integrationForm.integrationDesc"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入集成描述"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="integrationDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="integrationLoading" @click="handleSaveIntegration">保存</el-button>
-      </template>
     </el-dialog>
   </div>
 </template>
